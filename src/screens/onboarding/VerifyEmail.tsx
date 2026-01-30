@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import apiCall from "@/api/config";
 import onboardingService from "@/services/onboarding-service";
+import { VERIFICATION_CONTENT_WIDTH } from "@/lib/constants";
 
 const EMAIL_RESEND_COOLDOWN = 60; // seconds
 
@@ -94,7 +95,7 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
     verifyMutation.mutate(otp);
   };
 
-  const containerClass = "max-w-md mx-auto";
+  const containerClass = VERIFICATION_CONTENT_WIDTH;
 
   if (!uid || !email) {
     return (

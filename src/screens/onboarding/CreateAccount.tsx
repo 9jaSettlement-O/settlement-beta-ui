@@ -9,7 +9,7 @@ import { useOnboardingStore } from "@/store/onboarding.store";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createAccountSchema } from "@/lib/validations/onboarding";
-import { PASSWORD } from "@/lib/constants";
+import { PASSWORD, VERIFICATION_CONTENT_WIDTH } from "@/lib/constants";
 import apiCall from "@/api/config";
 import onboardingService from "@/services/onboarding-service";
 
@@ -119,7 +119,7 @@ const CreateAccount = ({ embedded = false, onRegisterSuccess }: CreateAccountPro
   };
 
   return (
-    <div className="space-y-5 max-w-md mx-auto">
+    <div className={`space-y-5 ${VERIFICATION_CONTENT_WIDTH}`}>
       <div className="text-center">
         <h1 className="text-2xl font-bold">Create Account</h1>
       </div>

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { encryptPin } from "@/lib/utils/onboarding";
 import { pinSetupSchema } from "@/lib/validations/onboarding";
 import logger from "@/utils/logger.util";
-import { API_ENDPOINTS } from "@/lib/constants";
+import { API_ENDPOINTS, VERIFICATION_CONTENT_WIDTH } from "@/lib/constants";
 
 interface SetupPinFormProps {
   uid: string;
@@ -164,7 +164,7 @@ export function SetupPinForm({ uid, onSuccess, onError, onBack }: SetupPinFormPr
   };
 
   return (
-    <div className="space-y-8">
+    <div className={`space-y-8 ${VERIFICATION_CONTENT_WIDTH}`}>
       <div className="text-center">
         <h1 className="text-3xl font-bold">Setup Transaction PIN</h1>
         <p className="mt-2 text-sm text-muted-foreground">

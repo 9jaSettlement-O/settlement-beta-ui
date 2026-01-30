@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import {
-  CANADIAN_PROVINCES,
   getCountryName,
   getSortedCountries,
+  getStateOptionsForCountry,
   getStateProvinceLabel,
-  requiresProvince,
+  getStateSelectPlaceholder,
 } from "@/lib/utils/countries";
 
 export interface BiodataFormValues {
@@ -310,7 +310,9 @@ export function BiodataForm({
           <Label htmlFor="state-province">
             {biodata.country ? getStateProvinceLabel(biodata.country) : "State/Province"} *
           </Label>
-          {requiresProvince(biodata.country) ? (
+          {(() => {
+            const stateOptions = getStateOptionsForCountry(biodata.country);
+            return stateOptions ? (
             <select
               id="state-province"
               value={biodata.state}
@@ -318,10 +320,12 @@ export function BiodataForm({
               required
               className={SELECT_STYLE}
             >
-              <option value="">Select province/territory</option>
-              {CANADIAN_PROVINCES.map((province) => (
-                <option key={province.code} value={province.code}>
-                  {province.name}
+              <option value="">
+                {biodata.country ? getStateSelectPlaceholder(biodata.country) : "Select"}
+              </option>
+              {stateOptions.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.name}
                 </option>
               ))}
             </select>
@@ -330,11 +334,12 @@ export function BiodataForm({
               id="state-province"
               value={biodata.state}
               onChange={(_e, sanitized) => setBiodata((prev) => ({ ...prev, state: sanitized }))}
-              placeholder={biodata.country === "NG" ? "Enter your state" : "Enter your state/province"}
+              placeholder="Enter your state/province"
               sanitizeMode="state"
               required
             />
-          )}
+          );
+          })()}
         </div>
       </div>
 

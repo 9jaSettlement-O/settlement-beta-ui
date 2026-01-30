@@ -31,10 +31,70 @@ export const CANADIAN_PROVINCES = [
 ] as const;
 
 /**
- * Check if a country code requires province/territory selection
+ * Nigerian States and Federal Capital Territory (36 states + FCT)
+ * Value stored in form is the state name (e.g. "Lagos", "Federal Capital Territory").
+ */
+export const NIGERIAN_STATES: ReadonlyArray<{ code: string; name: string }> = [
+  { code: "Abia", name: "Abia" },
+  { code: "Adamawa", name: "Adamawa" },
+  { code: "Akwa Ibom", name: "Akwa Ibom" },
+  { code: "Anambra", name: "Anambra" },
+  { code: "Bauchi", name: "Bauchi" },
+  { code: "Bayelsa", name: "Bayelsa" },
+  { code: "Benue", name: "Benue" },
+  { code: "Borno", name: "Borno" },
+  { code: "Cross River", name: "Cross River" },
+  { code: "Delta", name: "Delta" },
+  { code: "Ebonyi", name: "Ebonyi" },
+  { code: "Edo", name: "Edo" },
+  { code: "Ekiti", name: "Ekiti" },
+  { code: "Enugu", name: "Enugu" },
+  { code: "FCT", name: "Federal Capital Territory" },
+  { code: "Gombe", name: "Gombe" },
+  { code: "Imo", name: "Imo" },
+  { code: "Jigawa", name: "Jigawa" },
+  { code: "Kaduna", name: "Kaduna" },
+  { code: "Kano", name: "Kano" },
+  { code: "Katsina", name: "Katsina" },
+  { code: "Kebbi", name: "Kebbi" },
+  { code: "Kogi", name: "Kogi" },
+  { code: "Kwara", name: "Kwara" },
+  { code: "Lagos", name: "Lagos" },
+  { code: "Nasarawa", name: "Nasarawa" },
+  { code: "Niger", name: "Niger" },
+  { code: "Ogun", name: "Ogun" },
+  { code: "Ondo", name: "Ondo" },
+  { code: "Osun", name: "Osun" },
+  { code: "Oyo", name: "Oyo" },
+  { code: "Plateau", name: "Plateau" },
+  { code: "Rivers", name: "Rivers" },
+  { code: "Sokoto", name: "Sokoto" },
+  { code: "Taraba", name: "Taraba" },
+  { code: "Yobe", name: "Yobe" },
+  { code: "Zamfara", name: "Zamfara" },
+];
+
+/**
+ * Check if a country code requires province/territory selection (Canada)
  */
 export function requiresProvince(countryCode: string): boolean {
   return countryCode === "CA";
+}
+
+/**
+ * Check if a country has a predefined list of states/provinces (dropdown instead of free text)
+ */
+export function hasStateOptions(countryCode: string): boolean {
+  return countryCode === "CA" || countryCode === "NG";
+}
+
+/**
+ * Get state/province options for a country. Returns array for CA/NG, null otherwise.
+ */
+export function getStateOptionsForCountry(countryCode: string): ReadonlyArray<{ code: string; name: string }> | null {
+  if (countryCode === "CA") return CANADIAN_PROVINCES;
+  if (countryCode === "NG") return NIGERIAN_STATES;
+  return null;
 }
 
 /**
@@ -48,10 +108,18 @@ export function usesState(countryCode: string): boolean {
  * Get the label for state/province field based on country
  */
 export function getStateProvinceLabel(countryCode: string): string {
-  if (requiresProvince(countryCode)) {
-    return "Province/Territory";
-  }
-  return "State";
+  if (countryCode === "CA") return "Province/Territory";
+  if (countryCode === "NG") return "State";
+  return "State/Province";
+}
+
+/**
+ * Get placeholder for state/province select when country has predefined options
+ */
+export function getStateSelectPlaceholder(countryCode: string): string {
+  if (countryCode === "CA") return "Select province/territory";
+  if (countryCode === "NG") return "Select state";
+  return "Select";
 }
 
 /**

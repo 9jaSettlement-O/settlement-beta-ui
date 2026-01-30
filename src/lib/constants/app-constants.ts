@@ -6,6 +6,12 @@
  */
 
 /**
+ * Verification / onboarding step content width.
+ * Use on form containers to prevent unnecessary white space (e.g. Create Account, PIN, KYC steps).
+ */
+export const VERIFICATION_CONTENT_WIDTH = "max-w-md mx-auto";
+
+/**
  * Onboarding Progress Constants
  */
 export const ONBOARDING = {
@@ -97,6 +103,19 @@ export const DATE_FORMAT = {
 export const VERIFICATION_TRIGGERS = {
   BVN_ON_NAIRA_WALLET_FUND: true,
 } as const;
+
+/**
+ * Agent volume tiers for projected weekly volume (CAD).
+ * Stored value is the tier id (e.g. "tier1"); display uses label.
+ */
+export const AGENT_VOLUME_TIERS = [
+  { id: "tier1", label: "Tier 1: 0 - 4,999 CAD", min: 0, max: 4999 },
+  { id: "tier2", label: "Tier 2: 5,000 - 49,999 CAD", min: 5000, max: 49999 },
+  { id: "tier3", label: "Tier 3: 50,000+ CAD", min: 50000, max: null },
+] as const;
+
+/** Agent reward: NGN per CAD transferred (shown on Agent Profile step). */
+export const AGENT_REWARD_NGN_PER_CAD = 1;
 
 /**
  * KYC / Sumsub: When using mock services only, the Sumsub SDK is not integrated.

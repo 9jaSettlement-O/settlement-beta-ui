@@ -3,7 +3,6 @@ import * as React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -16,13 +15,11 @@ import { VerificationLayout } from "@/components/layouts/VerificationLayout";
 import { SetupPinForm } from "@/components/onboarding/SetupPinForm";
 import SumsubKyc from "./SumsubKyc";
 import KycSuccess from "./KycSuccess";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
 import { biodataSchema, phoneVerificationSchema, agentProfileSchema } from "@/lib/validations/onboarding";
-import { getPhoneFormatExample } from "@/lib/utils/countries";
 import logger from "@/utils/logger.util";
-import { API_ENDPOINTS, OTP } from "@/lib/constants";
+import { API_ENDPOINTS, OTP, AGENT_VOLUME_TIERS, AGENT_REWARD_NGN_PER_CAD } from "@/lib/constants";
 import { BiodataForm, type BiodataFormValues } from "@/components/onboarding/BiodataForm";
+import { PhoneNumberEntry, PhoneNumberVerify } from "@/components/onboarding/PhoneVerificationSteps";
 
 type KycStep = "pin" | "biodata" | "phone-entry" | "phone-verify" | "agent-profile-summary" | "agent-profile" | "success" | "sumsub";
 
@@ -69,9 +66,17 @@ const AgentOnboarding = () => {
     return () => clearInterval(t);
   }, [phoneResendCooldown]);
 
+  const volumeToTierId = (val: string): string => {
+    if (val === "tier1" || val === "tier2" || val === "tier3") return val;
+    const n = parseFloat(val);
+    if (Number.isNaN(n)) return "";
+    if (n >= 50000) return "tier3";
+    if (n >= 5000) return "tier2";
+    return "tier1";
+  };
   const [agentProfile, setAgentProfile] = useState<AgentProfileForm>({
     uniqueAgentId: savedAgentProfile?.uniqueAgentId || "",
-    projectedWeeklyVolume: savedAgentProfile?.projectedWeeklyVolume || "",
+    projectedWeeklyVolume: volumeToTierId(savedAgentProfile?.projectedWeeklyVolume || ""),
     projectedWeeklyTransactions: savedAgentProfile?.projectedWeeklyTransactions || "",
   });
   const hasRestoredStepRef = React.useRef(false);
@@ -524,150 +529,40 @@ const AgentOnboarding = () => {
     );
   } else if (step === "phone-entry") {
     stepContent = (
-      <div className="space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Phone Number</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Enter your phone number to receive a verification code
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setStep("biodata")}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePhoneEntrySubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
-                <div className="flex items-center gap-2 border border-input rounded-md bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                  <PhoneInput
-                    key={phoneCountryCode} // Force re-render when country changes
-                    international
-                    defaultCountry={phoneCountryCode as any}
-                    value={phone}
-                    onChange={(value) => setPhone(value || "")}
-                    onCountryChange={(country) => {
-                      if (country) {
-                        setPhoneCountryCode(country);
-                      }
-                    }}
-                    placeholder={getPhoneFormatExample(phoneCountryCode)}
-                    className="[&_.PhoneInput]:flex [&_.PhoneInput]:items-center [&_.PhoneInput]:gap-2 [&_.PhoneInput]:w-full [&_.PhoneInputCountry]:border-0 [&_.PhoneInputCountry]:bg-transparent [&_.PhoneInputCountry]:px-3 [&_.PhoneInputCountry]:h-10 [&_.PhoneInputCountry]:flex [&_.PhoneInputCountry]:items-center [&_.PhoneInputCountry]:gap-2 [&_.PhoneInputCountry]:min-w-fit [&_.PhoneInputCountrySelect]:border-0 [&_.PhoneInputCountrySelect]:bg-transparent [&_.PhoneInputCountrySelect]:cursor-pointer [&_.PhoneInputCountrySelect]:text-sm [&_.PhoneInputCountryIcon]:w-6 [&_.PhoneInputCountryIcon]:h-6 [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:h-10 [&_.PhoneInputInput]:px-3 [&_.PhoneInputInput]:py-2 [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:placeholder:text-muted-foreground"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Format example: {getPhoneFormatExample(phoneCountryCode)}
-                </p>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={sendPhoneOTPMutation.isPending || !phone}
-                size="lg"
-                loading={sendPhoneOTPMutation.isPending}
-              >
-                {sendPhoneOTPMutation.isPending ? "Sending..." : "Send OTP"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <PhoneNumberEntry
+        phone={phone}
+        onPhoneChange={setPhone}
+        phoneCountryCode={phoneCountryCode}
+        onCountryChange={setPhoneCountryCode}
+        onSubmit={handlePhoneEntrySubmit}
+        onBack={() => setStep("biodata")}
+        isPending={sendPhoneOTPMutation.isPending}
+        sendButtonLabel="Send OTP"
+      />
     );
   } else if (step === "phone-verify") {
     stepContent = (
-      <div className="space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Verify Phone Number</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Enter the 6-digit code sent to {phone}
-          </p>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            {/* Width matches 6 OTP boxes (6×2.5rem + 5×0.5rem gap) */}
-            <form onSubmit={handlePhoneVerify} className="flex flex-col items-center space-y-6 w-[17.5rem] mx-auto">
-              <div className="flex w-full flex-col items-center space-y-4 text-center">
-                <Label htmlFor="otp" className="text-center">Enter OTP *</Label>
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={phoneOtp}
-                    onChange={(value) => {
-                      const numericValue = value.replace(/\D/g, "");
-                      setPhoneOtp(numericValue);
-                    }}
-                    disabled={verifyPhoneMutation.isPending}
-                    pattern="[0-9]*"
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full min-w-0"
-                disabled={phoneOtp.length !== 6 || verifyPhoneMutation.isPending}
-                size="lg"
-                loading={verifyPhoneMutation.isPending}
-              >
-                {verifyPhoneMutation.isPending ? "Verifying..." : "Verify"}
-              </Button>
-
-              <div className="text-center space-y-2 w-full">
-                {phoneResendCooldown > 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Resend code in {Math.floor(phoneResendCooldown / 60)}:{(phoneResendCooldown % 60).toString().padStart(2, "0")}
-                  </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!canResendPhone || !phone) return;
-                      setPhoneOtp("");
-                      sendPhoneOTPMutation.mutate(phone);
-                      setPhoneResendCooldown(OTP.RESEND_COOLDOWN_SECONDS);
-                    }}
-                    disabled={sendPhoneOTPMutation.isPending || !canResendPhone || !phone}
-                    className="text-sm text-primary hover:underline disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    {sendPhoneOTPMutation.isPending ? "Sending..." : "Resend code"}
-                  </button>
-                )}
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep("phone-entry");
-                      setPhoneOtp("");
-                    }}
-                    className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Wrong phone number?
-                  </button>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <PhoneNumberVerify
+        phone={phone}
+        phoneOtp={phoneOtp}
+        onOtpChange={setPhoneOtp}
+        onSubmit={handlePhoneVerify}
+        onBack={() => {
+          setStep("phone-entry");
+          setPhoneOtp("");
+        }}
+        onResend={() => {
+          if (!canResendPhone || !phone) return;
+          setPhoneOtp("");
+          sendPhoneOTPMutation.mutate(phone);
+          setPhoneResendCooldown(OTP.RESEND_COOLDOWN_SECONDS);
+        }}
+        resendCooldown={phoneResendCooldown}
+        isVerifying={verifyPhoneMutation.isPending}
+        isResending={sendPhoneOTPMutation.isPending}
+        verifyButtonLabel="Verify"
+        showBackButton={false}
+      />
     );
   } else if (step === "agent-profile-summary") {
     const fullName = [savedBiodata?.firstName, savedBiodata?.middleName, savedBiodata?.lastName].filter(Boolean).join(" ") || "—";
@@ -760,38 +655,34 @@ const AgentOnboarding = () => {
                 </p>
               </div>
 
+              <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950 dark:border-emerald-800">
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                  <strong>Your reward:</strong> You get {AGENT_REWARD_NGN_PER_CAD} Naira (₦{AGENT_REWARD_NGN_PER_CAD}) per CAD transferred.
+                </p>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="projectedWeeklyVolume">Projected Weekly Volume (CAD) *</Label>
-                  <Input
+                  <select
                     id="projectedWeeklyVolume"
-                    type="number"
-                    step="0.01"
-                    min="0"
                     value={agentProfile.projectedWeeklyVolume}
                     onChange={(e) =>
                       setAgentProfile({ ...agentProfile, projectedWeeklyVolume: e.target.value })
                     }
-                    placeholder="0.00"
                     required
-                  />
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select volume tier</option>
+                    {AGENT_VOLUME_TIERS.map((tier) => (
+                      <option key={tier.id} value={tier.id}>
+                        {tier.label}
+                      </option>
+                    ))}
+                  </select>
                   <p className="text-xs text-muted-foreground">
                     Total value in Canadian Dollars (CAD) you expect to process per week
                   </p>
-                  {agentProfile.projectedWeeklyVolume && !isNaN(parseFloat(agentProfile.projectedWeeklyVolume)) && (
-                    <div className="mt-2 p-2 rounded-md bg-muted/50 border border-border">
-                      <p className="text-xs font-medium text-foreground">
-                        Volume Tier: {
-                          (() => {
-                            const volume = parseFloat(agentProfile.projectedWeeklyVolume);
-                            if (volume >= 50000) return "Tier 3 (50,000+ CAD)";
-                            if (volume >= 5000) return "Tier 2 (5,000 - 49,999 CAD)";
-                            return "Tier 1 (0 - 4,999 CAD)";
-                          })()
-                        }
-                      </p>
-                    </div>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="projectedWeeklyTransactions">Projected Weekly Transactions *</Label>

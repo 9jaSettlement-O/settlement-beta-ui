@@ -1,4 +1,5 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { AccountType } from "@/types/onboarding.types";
@@ -25,11 +26,22 @@ export function KycPromptBanner({
       className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 mb-6 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
       onClick={handleCompleteKYC}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 w-full">
         <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-        <AlertDescription className="text-blue-800 dark:text-blue-200 m-0">
+        <AlertDescription className="text-blue-800 dark:text-blue-200 m-0 flex-1 min-w-0">
           <strong className="font-semibold text-blue-900 dark:text-blue-100">Complete your profile verification</strong> to access our amazing features
         </AlertDescription>
+        <Button
+          type="button"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCompleteKYC();
+          }}
+          className="flex-shrink-0"
+        >
+          Start Now
+        </Button>
       </div>
     </Alert>
   );

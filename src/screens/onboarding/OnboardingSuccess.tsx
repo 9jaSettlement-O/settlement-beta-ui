@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { getVerificationRequirements } from "@/lib/constants/verification-requirements";
+import { VERIFICATION_CONTENT_WIDTH } from "@/lib/constants";
 import type { AccountType } from "@/types/onboarding.types";
 
 const AUTO_REDIRECT_SECONDS = 60;
@@ -44,7 +45,7 @@ const OnboardingSuccess = ({ embedded = false, accountType: accountTypeProp }: O
   }, [navigate]);
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${VERIFICATION_CONTENT_WIDTH}`}>
       <div className="text-center">
         <CheckCircle2 className="h-14 w-14 text-green-600 mx-auto mb-3" aria-hidden />
         <h1 className="text-2xl font-bold">Account creation successful</h1>

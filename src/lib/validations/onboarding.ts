@@ -120,9 +120,10 @@ export const agentProfileSchema = z.object({
       (val) => /^[a-zA-Z0-9_-]+$/.test(val),
       "Agent ID can only contain letters, numbers, hyphens, and underscores"
     ),
-  projectedWeeklyVolume: z.string()
-    .min(1, "Projected weekly volume is required")
-    .regex(/^\d+(\.\d{1,2})?$/, "Please enter a valid amount"),
+  projectedWeeklyVolume: z.enum(
+    ["tier1", "tier2", "tier3"],
+    { required_error: "Please select a volume tier" }
+  ),
   projectedWeeklyTransactions: z.string()
     .min(1, "Projected weekly transactions is required")
     .regex(/^\d+$/, "Please enter a valid number"),
