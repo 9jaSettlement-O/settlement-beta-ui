@@ -18,7 +18,7 @@ export const ONBOARDING = {
  */
 export const OTP = {
   LENGTH: 6,
-  RESEND_COOLDOWN_SECONDS: 180, // 3 minutes
+  RESEND_COOLDOWN_SECONDS: 60, // Resend inactive until 60s countdown finishes (email & phone)
   EXPIRY_MINUTES: 10,
   PHONE_EXPIRY_MINUTES: 5,
 } as const;

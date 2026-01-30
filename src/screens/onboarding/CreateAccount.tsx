@@ -20,13 +20,12 @@ interface CreateAccountProps {
 
 const CreateAccount = ({ embedded = false, onRegisterSuccess }: CreateAccountProps) => {
   const navigate = useNavigate();
-  const { accountType, setEmail, setUid, setCurrentStep } = useOnboardingStore();
+  const { accountType, setEmail, setUid, setCurrentStep, clearAccountSelection } = useOnboardingStore();
   const [email, setEmailLocal] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
 
   const registerMutation = useMutation({
     mutationFn: async () => {
@@ -113,9 +112,11 @@ const CreateAccount = ({ embedded = false, onRegisterSuccess }: CreateAccountPro
   const hasNumber = /[0-9]/.test(password);
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
   const passwordValid = hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial;
-  const showPasswordRules = passwordTouched && !passwordValid;
 
-  const handleBack = () => navigate("/select-account-type");
+  const handleBack = () => {
+    clearAccountSelection();
+    navigate("/select-account-type", { replace: true });
+  };
 
   return (
     <div className="space-y-5 max-w-md mx-auto">
@@ -124,13 +125,13 @@ const CreateAccount = ({ embedded = false, onRegisterSuccess }: CreateAccountPro
       </div>
 
       <Card>
-        <CardHeader className="pb-1 pt-0 px-6">
+        <CardHeader className="pb-1 pt-5 px-6">
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            className="-ml-2 h-8 w-8"
+            className="-ml-2 h-8 w-8 mt-1"
             aria-label="Back to select account type"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -159,10 +160,7 @@ const CreateAccount = ({ embedded = false, onRegisterSuccess }: CreateAccountPro
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setPasswordTouched(true);
-                  }}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="new-password"
                   className="pr-10"
@@ -176,17 +174,15 @@ const CreateAccount = ({ embedded = false, onRegisterSuccess }: CreateAccountPro
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {showPasswordRules && (
-                <ul className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
-                  <li className={hasMinLen ? "text-green-600" : ""}>
-                    {hasMinLen ? "✓" : "○"} At least {PASSWORD.MIN_LENGTH} characters
-                  </li>
-                  <li className={hasUpper ? "text-green-600" : ""}>{hasUpper ? "✓" : "○"} One uppercase letter</li>
-                  <li className={hasLower ? "text-green-600" : ""}>{hasLower ? "✓" : "○"} One lowercase letter</li>
-                  <li className={hasNumber ? "text-green-600" : ""}>{hasNumber ? "✓" : "○"} One number</li>
-                  <li className={hasSpecial ? "text-green-600" : ""}>{hasSpecial ? "✓" : "○"} One special character</li>
-                </ul>
-              )}
+              <ul className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
+                <li className={hasMinLen ? "text-green-600" : ""}>
+                  {hasMinLen ? "✓" : "○"} At least {PASSWORD.MIN_LENGTH} characters
+                </li>
+                <li className={hasUpper ? "text-green-600" : ""}>{hasUpper ? "✓" : "○"} One uppercase letter</li>
+                <li className={hasLower ? "text-green-600" : ""}>{hasLower ? "✓" : "○"} One lowercase letter</li>
+                <li className={hasNumber ? "text-green-600" : ""}>{hasNumber ? "✓" : "○"} One number</li>
+                <li className={hasSpecial ? "text-green-600" : ""}>{hasSpecial ? "✓" : "○"} One special character</li>
+              </ul>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,7 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, FileText, Camera, Shield } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import type { AccountType } from "@/types/onboarding.types";
+import { getVerificationRequirements } from "@/lib/constants/verification-requirements";
 
 interface KycSuccessProps {
   accountType: AccountType;
@@ -9,81 +10,7 @@ interface KycSuccessProps {
 }
 
 const KycSuccess = ({ accountType, onContinue }: KycSuccessProps) => {
-
-  const kycRequirements = {
-    individual: {
-      title: "Individual KYC Requirements",
-      items: [
-        {
-          icon: FileText,
-          title: "Valid Government ID",
-          description: "Passport, Driver's License, or National ID card",
-        },
-        {
-          icon: Camera,
-          title: "Liveness Check",
-          description: "A real-time selfie to verify your identity",
-        },
-        {
-          icon: Shield,
-          title: "Document Verification",
-          description: "Clear photos of your ID document (front and back)",
-        },
-      ],
-    },
-    business: {
-      title: "Business KYB Requirements",
-      items: [
-        {
-          icon: FileText,
-          title: "Business Registration Documents",
-          description: "Certificate of Incorporation or Business Registration",
-        },
-        {
-          icon: FileText,
-          title: "Tax Identification Number",
-          description: "TIN or EIN document",
-        },
-        {
-          icon: FileText,
-          title: "Directors' Information",
-          description: "Personal details and IDs of all directors",
-        },
-        {
-          icon: Shield,
-          title: "Business Address Verification",
-          description: "Proof of business address (utility bill, lease agreement)",
-        },
-      ],
-    },
-    agent: {
-      title: "Agent Onboarding Requirements",
-      items: [
-        {
-          icon: FileText,
-          title: "Valid Government ID",
-          description: "Passport, Driver's License, or National ID card",
-        },
-        {
-          icon: Camera,
-          title: "Liveness Check",
-          description: "A real-time selfie to verify your identity",
-        },
-        {
-          icon: FileText,
-          title: "Proof of Address",
-          description: "Utility bill, bank statement, or lease agreement",
-        },
-        {
-          icon: FileText,
-          title: "Agency Agreement",
-          description: "Signed agency agreement document",
-        },
-      ],
-    },
-  };
-
-  const requirements = kycRequirements[accountType] || kycRequirements.individual;
+  const requirements = getVerificationRequirements(accountType);
 
   return (
     <div className="space-y-8">

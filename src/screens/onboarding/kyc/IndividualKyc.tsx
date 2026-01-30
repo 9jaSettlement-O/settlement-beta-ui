@@ -577,7 +577,7 @@ const IndividualKyc = () => {
                       setPhoneResendCooldown(OTP.RESEND_COOLDOWN_SECONDS);
                     }}
                     disabled={sendPhoneOTPMutation.isPending || !canResendPhone || !phone}
-                    className="text-sm text-primary hover:underline disabled:opacity-50"
+                    className="text-sm text-primary hover:underline disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {sendPhoneOTPMutation.isPending ? "Sending..." : "Resend code"}
                   </button>

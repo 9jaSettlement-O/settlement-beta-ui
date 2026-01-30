@@ -57,7 +57,7 @@ const AccountCreationFlow = () => {
       />
     );
   } else if (step === "success") {
-    content = <OnboardingSuccess embedded />;
+    content = <OnboardingSuccess embedded accountType={accountType} />;
   }
 
   if (content == null) return null;

@@ -25,8 +25,9 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
   const uid = searchParams.get("uid") || storeUid || "";
   const email = searchParams.get("email") || storeEmail || "";
   const [otp, setOtp] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(EMAIL_RESEND_COOLDOWN);
 
+  // Countdown starts when user lands (OTP was just sent from Create Account)
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setInterval(() => setResendCooldown((c) => (c <= 1 ? 0 : c - 1)), 1000);
@@ -93,21 +94,25 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
     verifyMutation.mutate(otp);
   };
 
+  const containerClass = "max-w-md mx-auto";
+
   if (!uid || !email) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground text-center">Missing email or user. Please start from Create Account.</p>
-          <Button className="w-full mt-4" onClick={() => (embedded && onGoBack ? onGoBack() : navigate("/create-account"))}>
-            Go back
-          </Button>
-        </CardContent>
-      </Card>
+      <div className={containerClass}>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground text-center">Missing email or user. Please start from Create Account.</p>
+            <Button className="w-full mt-4" onClick={() => (embedded && onGoBack ? onGoBack() : navigate("/create-account"))}>
+              Go back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className={`space-y-8 ${containerClass}`}>
       <div className="text-center">
         <h1 className="text-3xl font-bold">Verify Email</h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -117,7 +122,7 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
 
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="flex flex-col items-center space-y-6 w-[17.5rem] mx-auto">
+          <form onSubmit={handleSubmit} className="flex flex-col items-center space-y-6 w-full max-w-[17.5rem] mx-auto">
             <div className="flex w-full flex-col items-center space-y-4 text-center">
               <Label>Verification code *</Label>
               <InputOTP
@@ -155,8 +160,8 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
               <button
                 type="button"
                 onClick={() => resendMutation.mutate()}
-                disabled={resendMutation.isPending}
-                className="text-sm text-primary hover:underline disabled:opacity-50"
+                disabled={resendMutation.isPending || resendCooldown > 0}
+                className="text-sm text-primary hover:underline disabled:opacity-50 disabled:pointer-events-none"
               >
                 {resendMutation.isPending ? "Sending..." : "Resend code"}
               </button>
