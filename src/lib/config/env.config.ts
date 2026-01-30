@@ -1,0 +1,74 @@
+/**
+ * Environment Configuration
+ * 
+ * Validates and provides type-safe access to environment variables.
+ */
+
+interface EnvConfig {
+  VITE_APP_API_URL: string;
+  VITE_ENCRYPTION_KEY?: string;
+  MODE: "development" | "production" | "test";
+  DEV: boolean;
+  PROD: boolean;
+}
+
+/**
+ * Validate required environment variables
+ */
+function validateEnv(): EnvConfig {
+  const apiUrl = import.meta.env.VITE_APP_API_URL;
+  
+  if (!apiUrl) {
+    throw new Error(
+      "VITE_APP_API_URL is not defined. Please set it in your .env file."
+    );
+  }
+
+  return {
+    VITE_APP_API_URL: apiUrl,
+    VITE_ENCRYPTION_KEY: import.meta.env.VITE_ENCRYPTION_KEY,
+    MODE: import.meta.env.MODE as "development" | "production" | "test",
+    DEV: import.meta.env.DEV,
+    PROD: import.meta.env.PROD,
+  };
+}
+
+/**
+ * Validated environment configuration
+ */
+export const env = validateEnv();
+
+/**
+ * Check if running in development mode
+ */
+export const isDev = env.DEV;
+
+/**
+ * Check if running in production mode
+ */
+export const isProd = env.PROD;
+
+/**
+ * Get API base URL
+ */
+export const getApiUrl = (): string => env.VITE_APP_API_URL;
+
+/**
+ * Get encryption key (with fallback warning in dev)
+ */
+export const getEncryptionKey = (): string => {
+  if (env.VITE_ENCRYPTION_KEY) {
+    return env.VITE_ENCRYPTION_KEY;
+  }
+  
+  if (env.DEV) {
+    console.warn(
+      "VITE_ENCRYPTION_KEY not set. Using default key (development only)."
+    );
+    return "dev-encryption-key-change-in-production";
+  }
+  
+  throw new Error(
+    "VITE_ENCRYPTION_KEY is required in production. Please set it in your .env file."
+  );
+};
