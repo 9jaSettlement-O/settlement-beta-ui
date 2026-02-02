@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react-swc';
 const __dirname = path.dirname(path.resolve(new URL(import.meta.url).pathname));
 
 export default defineConfig({
+  base: "/settlement-beta-ui/",
   preview: {
     allowedHosts: [
       "www.app.staging.9jasettlement.com",

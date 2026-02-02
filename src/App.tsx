@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, useNavigate } from "react-router-dom";
+import { HashRouter as Router, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import AppRoutes from "@/routes/AppRoutes";
 import { OnboardingProgressGuard } from "@/components/onboarding/OnboardingProgressGuard";
