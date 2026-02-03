@@ -15,11 +15,17 @@ function withFallbackAndErrorBoundary(data: IFallbackandError) {
   const {
     element,
     fallbackUI = <Skeleton className="h-40 w-full rounded-md" />,
-    errorUI = <ErrorUI />,
   } = data;
 
   return (
-    <ErrorBoundary fallback={errorUI}>
+    <ErrorBoundary
+      fallbackRender={({ error, resetErrorBoundary }) => (
+        <ErrorUI error={error} onRetry={resetErrorBoundary} />
+      )}
+      onError={(error) => {
+        console.error("[ErrorBoundary] Caught error:", error);
+      }}
+    >
       <Suspense fallback={fallbackUI}>{element}</Suspense>
     </ErrorBoundary>
   );

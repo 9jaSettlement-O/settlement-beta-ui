@@ -12,16 +12,28 @@ interface EnvConfig {
   PROD: boolean;
 }
 
+/** Default API URL for GitHub Pages QA when secret is not set */
+const GITHUB_PAGES_API_FALLBACK = "https://9jasettlement.com/api";
+
 /**
  * Validate required environment variables
  */
 function validateEnv(): EnvConfig {
-  const apiUrl = import.meta.env.VITE_APP_API_URL;
-  
+  let apiUrl = import.meta.env.VITE_APP_API_URL;
+
   if (!apiUrl) {
-    throw new Error(
-      "VITE_APP_API_URL is not defined. Please set it in your .env file."
-    );
+    const isGitHubPages =
+      typeof window !== "undefined" && window.location.hostname.includes("github.io");
+    if (isGitHubPages) {
+      console.warn(
+        "VITE_APP_API_URL not set. Using fallback for GitHub Pages QA."
+      );
+      apiUrl = GITHUB_PAGES_API_FALLBACK;
+    } else {
+      throw new Error(
+        "VITE_APP_API_URL is not defined. Please set it in your .env file."
+      );
+    }
   }
 
   return {
@@ -54,20 +66,22 @@ export const isProd = env.PROD;
 export const getApiUrl = (): string => env.VITE_APP_API_URL;
 
 /**
- * Get encryption key (with fallback warning in dev)
+ * Get encryption key (with fallback for dev/QA)
  */
 export const getEncryptionKey = (): string => {
   if (env.VITE_ENCRYPTION_KEY) {
     return env.VITE_ENCRYPTION_KEY;
   }
-  
-  if (env.DEV) {
+
+  const isGitHubPages =
+    typeof window !== "undefined" && window.location.hostname.includes("github.io");
+  if (env.DEV || isGitHubPages) {
     console.warn(
-      "VITE_ENCRYPTION_KEY not set. Using default key (development only)."
+      "VITE_ENCRYPTION_KEY not set. Using default key (development/QA only)."
     );
     return "dev-encryption-key-change-in-production";
   }
-  
+
   throw new Error(
     "VITE_ENCRYPTION_KEY is required in production. Please set it in your .env file."
   );

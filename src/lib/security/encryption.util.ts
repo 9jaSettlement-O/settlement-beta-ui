@@ -15,17 +15,19 @@ import CryptoJS from "crypto-js";
 import logger from "@/utils/logger.util";
 
 /**
- * Get encryption key from environment or use a default (for development only)
+ * Get encryption key from environment or use a default (for development/QA only)
  * In production, this should be stored securely (e.g., environment variables, key management service)
  */
 function getEncryptionKey(): string {
   const key = import.meta.env.VITE_ENCRYPTION_KEY;
   if (!key) {
-    if (import.meta.env.PROD) {
+    // QA fallback: GitHub Pages deployments may not have the secret set
+    const isGitHubPages =
+      typeof window !== "undefined" && window.location.hostname.includes("github.io");
+    if (import.meta.env.PROD && !isGitHubPages) {
       throw new Error("Encryption key not configured. Cannot encrypt sensitive data.");
     }
-    // Development fallback (should never be used in production)
-    logger.warn("Using default encryption key. This should only be used in development.");
+    logger.warn("Using default encryption key. This should only be used in development/QA.");
     return "dev-encryption-key-change-in-production";
   }
   return key;
