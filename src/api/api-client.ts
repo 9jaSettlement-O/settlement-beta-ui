@@ -5,9 +5,8 @@
  * Extends the base service for domain-specific API classes.
  */
 
-import { AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import { BaseService } from "@/services/api/base.service";
-import { API_ENDPOINTS } from "@/lib/constants";
 import type { IAPIResponse } from "@/types/api.types";
 
 /**

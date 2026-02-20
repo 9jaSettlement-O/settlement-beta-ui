@@ -5,7 +5,7 @@
  * Provides common functionality like error handling, retry logic, and response transformation.
  */
 
-import { AxiosInstance, AxiosError } from "axios";
+import type { AxiosInstance } from "axios";
 import type { IAPIResponse } from "@/types/api.types";
 import { parseApiError, getUserFriendlyMessage, isRetryableError } from "@/lib/errors";
 import logger from "@/utils/logger.util";
@@ -104,7 +104,7 @@ export abstract class BaseService {
   /**
    * Make a GET request
    */
-  protected async get<T>(
+  protected async get(
     endpoint: string,
     usePrivate: boolean = false,
     options?: RequestOptions
@@ -123,7 +123,7 @@ export abstract class BaseService {
   /**
    * Make a POST request
    */
-  protected async post<T>(
+  protected async post(
     endpoint: string,
     data: any,
     usePrivate: boolean = false,
@@ -143,7 +143,7 @@ export abstract class BaseService {
   /**
    * Make a PUT request
    */
-  protected async put<T>(
+  protected async put(
     endpoint: string,
     data: any,
     usePrivate: boolean = false,
@@ -163,7 +163,7 @@ export abstract class BaseService {
   /**
    * Make a PATCH request
    */
-  protected async patch<T>(
+  protected async patch(
     endpoint: string,
     data: any,
     usePrivate: boolean = false,
@@ -183,7 +183,7 @@ export abstract class BaseService {
   /**
    * Make a DELETE request
    */
-  protected async delete<T>(
+  protected async delete(
     endpoint: string,
     usePrivate: boolean = false,
     options?: RequestOptions

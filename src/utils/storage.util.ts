@@ -1,19 +1,22 @@
 import { STORAGE_KEYS } from "@/lib/constants";
 
+/** DOM Storage type (sessionStorage/localStorage) to avoid shadowing by class name. */
+type DOMStorage = globalThis.Storage;
+
 /**
  * sessionStorage for auth: session ends when the browser/tab is closed.
  * Fintech apps should require re-login after closing the browser.
  */
-function getAuthStorage(): Storage | null {
+function getAuthStorage(): DOMStorage | null {
   return typeof window !== "undefined" ? sessionStorage : null;
 }
 
 /** localStorage for non-auth data (onboarding progress, OTP cache, etc.). */
-function getPersistentStorage(): Storage | null {
+function getPersistentStorage(): DOMStorage | null {
   return typeof window !== "undefined" ? localStorage : null;
 }
 
-class Storage {
+class AppStorage {
   storeAuth(token: string, id: string, userType: string, email: string): void {
     const storage = getAuthStorage();
     if (!storage) return;
@@ -152,5 +155,5 @@ class Storage {
   }
 }
 
-const storage = new Storage();
+const storage = new AppStorage();
 export default storage;

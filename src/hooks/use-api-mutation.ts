@@ -5,7 +5,7 @@
  * Provides consistent error handling across all API mutations.
  */
 
-import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { handleError, getUserMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import { shouldUseMockService } from "@/lib/config/app.config";

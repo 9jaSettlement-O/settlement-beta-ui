@@ -33,7 +33,7 @@ InputOTPGroup.displayName = "InputOTPGroup";
 const InputOTPSlot = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { index: number }
->(({ index, className, ...props }, ref) => {
+>(({ index, className }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext);
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
 
@@ -52,7 +52,6 @@ const InputOTPSlot = React.forwardRef<
           : "0 0 0 1px hsl(var(--input))",
       }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      {...props}
     >
       {char}
       {hasFakeCaret && (

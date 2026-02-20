@@ -5,12 +5,8 @@
  * Provides consistent error handling across the application.
  */
 
-import {
-  AppError,
-  BaseAppError,
-  ErrorCategory,
-  ErrorSeverity,
-} from "./error-types";
+import { BaseAppError, ErrorCategory, ErrorSeverity } from "./error-types";
+import type { AppError } from "./error-types";
 import { parseApiError, getUserFriendlyMessage, logError } from "./api-error.util";
 import logger from "@/utils/logger.util";
 

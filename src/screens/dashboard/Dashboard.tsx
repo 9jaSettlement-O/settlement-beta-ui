@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KycPromptBanner } from "@/components/KycPromptBanner";
 import { Wallet, ArrowRightLeft, Send, TrendingUp, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -41,7 +40,7 @@ const Dashboard = () => {
     }
   }, [needsKycVerification, effectiveAccountType]);
 
-  const handleRestrictedAction = (action: string) => {
+  const handleRestrictedAction = (_action: string) => {
     toast.error("Please complete your profile and verification to access this feature.");
     if (effectiveAccountType) {
       navigate(`/onboarding/kyc/${effectiveAccountType}${effectiveUid ? `?uid=${effectiveUid}` : ""}`);

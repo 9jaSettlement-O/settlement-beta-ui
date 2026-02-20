@@ -17,11 +17,11 @@ function YearChevronsDropdown(props: DropdownProps) {
     style,
   } = props
   const { goToMonth, months } = useDayPicker()
-  const year = value ?? new Date().getFullYear()
+  const year = Number(value ?? new Date().getFullYear())
   const currentMonth = months[0]?.date ?? new Date()
   const month = currentMonth.getMonth()
-  const minYear = options?.[0]?.value
-  const maxYear = options?.length ? options[options.length - 1]?.value : undefined
+  const minYear = options?.[0]?.value != null ? Number(options[0].value) : undefined
+  const maxYear = options?.length && options[options.length - 1]?.value != null ? Number(options[options.length - 1].value) : undefined
   const canGoPrev = !disabled && (minYear == null || year > minYear)
   const canGoNext = !disabled && (maxYear == null || year < maxYear)
   const goPrev = () => canGoPrev && goToMonth(new Date(year - 1, month))

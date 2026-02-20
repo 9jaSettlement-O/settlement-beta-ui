@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { secureStorage, SecureStorageOptions } from "@/lib/security";
+import { secureStorage } from "@/lib/security";
+import type { SecureStorageOptions } from "@/lib/security";
 
 /**
  * Options for secure storage hook

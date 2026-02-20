@@ -31,7 +31,7 @@ export interface SecureStorageOptions {
 /**
  * Stored data structure with metadata
  */
-interface StoredData<T> {
+interface StoredData<_T = unknown> {
   data: string; // Encrypted or plain data
   encrypted: boolean;
   expiresAt?: number; // Timestamp when data expires

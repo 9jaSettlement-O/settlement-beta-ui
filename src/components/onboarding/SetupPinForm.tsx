@@ -218,9 +218,15 @@ export function SetupPinForm({ uid, onSuccess, onError, onBack }: SetupPinFormPr
                 </p>
               )}
               {showTryAgain && (
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  Resetting...
-                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleTryAgain}
+                >
+                  Try again
+                </Button>
               )}
             </div>
 

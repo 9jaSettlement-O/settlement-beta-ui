@@ -4,8 +4,6 @@
  * Type definitions for API-related interfaces.
  */
 
-import type { JSX } from "react";
-
 /**
  * Standard API Response interface
  */

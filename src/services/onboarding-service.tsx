@@ -1,7 +1,7 @@
 import storage from "@/utils/storage.util";
 import type { CreateAccountData } from "@/types/onboarding.types";
 import logger from "@/utils/logger.util";
-import { STORAGE_KEYS, OTP, ONBOARDING } from "@/lib/constants";
+import { STORAGE_KEYS, OTP } from "@/lib/constants";
 
 /**
  * Service to handle onboarding form data
@@ -260,7 +260,7 @@ class OnboardingService {
   /**
    * Setup transaction PIN (mock)
    */
-  async setupPin(uid: string, encryptedPin: string): Promise<{
+  async setupPin(uid: string, _encryptedPin: string): Promise<{
     error: boolean;
     message: string;
     data?: any;
@@ -299,7 +299,7 @@ class OnboardingService {
         error: false,
         message: "PIN setup successful",
         data: { uid, pinSetup: true },
-        errors: [],
+        errors: {},
         status: 200,
       };
     } catch (error) {
@@ -365,7 +365,7 @@ class OnboardingService {
         error: false,
         message: "Profile updated successfully",
         data: { ...data },
-        errors: [],
+        errors: {},
         status: 200,
       };
     } catch (error) {
@@ -423,7 +423,7 @@ class OnboardingService {
         error: false,
         message: "OTP sent successfully",
         data: { phone },
-        errors: [],
+        errors: {},
         status: 200,
       };
     } catch (error) {
@@ -506,7 +506,7 @@ class OnboardingService {
           error: false,
           message: "Phone verified successfully",
           data: { phone, verified: true },
-          errors: [],
+          errors: {},
           status: 200,
         };
       } else {

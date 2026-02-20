@@ -44,33 +44,7 @@ export interface AppError {
 }
 
 /**
- * API Error interface
- */
-export interface ApiError extends AppError {
-  statusCode?: number;
-  response?: any;
-  endpoint?: string;
-  method?: string;
-}
-
-/**
- * Validation Error interface
- */
-export interface ValidationError extends AppError {
-  field?: string;
-  fields?: Record<string, string[]>;
-}
-
-/**
- * Network Error interface
- */
-export interface NetworkError extends AppError {
-  isTimeout?: boolean;
-  isOffline?: boolean;
-}
-
-/**
- * Custom error classes
+ * Custom error classes (interfaces omitted to avoid conflict with class declarations).
  */
 export class BaseAppError extends Error implements AppError {
   public readonly code?: string;

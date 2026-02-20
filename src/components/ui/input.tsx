@@ -160,12 +160,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         },
       } as React.ChangeEvent<HTMLInputElement>;
 
-      // Call original onChange if provided
       if (onChange) {
         onChange(syntheticEvent, sanitizedValue);
-      } else if (props.onChange) {
-        // Fallback to standard onChange
-        (props.onChange as any)(syntheticEvent);
       }
     };
 

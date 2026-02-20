@@ -13,7 +13,7 @@ interface KycPromptBannerProps {
 export function KycPromptBanner({
   accountType,
   uid,
-  isDismissible = false,
+  isDismissible: _isDismissible = false,
 }: KycPromptBannerProps) {
   const navigate = useNavigate();
 

@@ -32,7 +32,7 @@ interface AgentProfileForm {
 const AgentOnboarding = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { uid, accountType, pinSetup, isEmailVerified, biodata: savedBiodata, phone: savedPhone, phoneVerified, agentProfile: savedAgentProfile, setBiodata: saveBiodata, setPhone: savePhone, setAgentProfile: saveAgentProfile, setPinSetup, setCurrentStep } = useOnboardingStore();
+  const { uid, pinSetup, isEmailVerified, biodata: savedBiodata, phone: savedPhone, phoneVerified, agentProfile: savedAgentProfile, setBiodata: saveBiodata, setPhone: savePhone, setAgentProfile: saveAgentProfile, setPinSetup, setCurrentStep } = useOnboardingStore();
   const currentUid = searchParams.get("uid") || uid || "";
 
   const [step, setStep] = useState<KycStep>("pin");
@@ -732,7 +732,6 @@ const AgentOnboarding = () => {
     }
     stepContent = (
       <SumsubKyc
-        accountType="agent"
         onComplete={() => {
           navigate("/dashboard");
         }}

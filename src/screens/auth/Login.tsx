@@ -112,7 +112,7 @@ const Login = () => {
                   type="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e, sanitized) => setEmail(sanitized)}
+                  onChange={(_e, sanitized) => setEmail(sanitized)}
                   sanitizeMode="email"
                   required
                   disabled={loginMutation.isPending}
@@ -136,7 +136,7 @@ const Login = () => {
                   type="password"
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e, sanitized) => setPassword(sanitized)}
+                  onChange={(_e, sanitized) => setPassword(sanitized)}
                   showPasswordToggle
                   required
                   disabled={loginMutation.isPending}

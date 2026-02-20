@@ -20,7 +20,7 @@ function withFallbackAndErrorBoundary(data: IFallbackandError) {
   return (
     <ErrorBoundary
       fallbackRender={({ error, resetErrorBoundary }) => (
-        <ErrorUI error={error} onRetry={resetErrorBoundary} />
+        <ErrorUI error={error as Error} onRetry={resetErrorBoundary} />
       )}
       onError={(error) => {
         console.error("[ErrorBoundary] Caught error:", error);

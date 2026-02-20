@@ -8,7 +8,7 @@ countries.registerLocale(enLocale);
  * Get display name for a country code
  */
 export function getCountryName(countryCode: string): string {
-  return countries.getName(countryCode, "en") || countryCode;
+  return countries.getName(countryCode as Parameters<typeof countries.getName>[0], "en") || countryCode;
 }
 
 /**
@@ -128,8 +128,8 @@ export function getStateSelectPlaceholder(countryCode: string): string {
 export function getSortedCountries(): string[] {
   const allCountries = getCountries();
   const priorityCountries = ["CA", "NG"]; // Canada and Nigeria first
-  const priority = priorityCountries.filter((code: string) => allCountries.includes(code));
-  const others = allCountries.filter((code: string) => !priorityCountries.includes(code));
+  const priority = priorityCountries.filter((code: string) => allCountries.includes(code as (typeof allCountries)[number]));
+  const others = allCountries.filter((code) => !priorityCountries.includes(code));
   return [...priority, ...others];
 }
 

@@ -15,7 +15,7 @@ interface OnboardingSuccessProps {
   accountType?: AccountType | null;
 }
 
-const OnboardingSuccess = ({ embedded = false, accountType: accountTypeProp }: OnboardingSuccessProps) => {
+const OnboardingSuccess = ({ embedded: _embedded = false, accountType: accountTypeProp }: OnboardingSuccessProps) => {
   const navigate = useNavigate();
   const accountTypeFromStore = useOnboardingStore((s) => s.accountType);
   const accountType = accountTypeProp ?? accountTypeFromStore;

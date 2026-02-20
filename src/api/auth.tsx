@@ -1,4 +1,4 @@
-import { AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import type { IAPIResponse } from "@/types/api.types";
 import { BaseService } from "@/services/api/base.service";
 import { API_ENDPOINTS } from "@/lib/constants";

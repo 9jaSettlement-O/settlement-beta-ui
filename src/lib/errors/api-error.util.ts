@@ -5,15 +5,13 @@
  * Converts various API error formats into standardized error objects.
  */
 
-import { AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import {
   ApiError,
   NetworkError,
   ValidationError,
   AuthenticationError,
   AuthorizationError,
-  ErrorCategory,
-  ErrorSeverity,
 } from "./error-types";
 import logger from "@/utils/logger.util";
 

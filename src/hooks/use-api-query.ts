@@ -5,7 +5,7 @@
  * Provides consistent query behavior across the application.
  */
 
-import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { handleError, getUserMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import logger from "@/utils/logger.util";
@@ -18,7 +18,7 @@ export interface UseApiQueryOptions<TData, TError = Error> {
   queryFn: () => Promise<TData>;
   enabled?: boolean;
   staleTime?: number;
-  cacheTime?: number;
+  gcTime?: number;
   refetchOnWindowFocus?: boolean;
   refetchOnMount?: boolean;
   showErrorToast?: boolean; // Show error toast (default: false for queries)
@@ -45,7 +45,7 @@ export function useApiQuery<TData = any, TError = Error>(
     queryFn,
     enabled = true,
     staleTime = 5 * 60 * 1000, // 5 minutes default
-    cacheTime = 10 * 60 * 1000, // 10 minutes default
+    gcTime = 10 * 60 * 1000, // 10 minutes default (was cacheTime in v4)
     refetchOnWindowFocus = false,
     refetchOnMount = true,
     showErrorToast = false, // Queries typically don't show error toasts
@@ -77,7 +77,7 @@ export function useApiQuery<TData = any, TError = Error>(
     },
     enabled,
     staleTime,
-    cacheTime,
+    gcTime,
     refetchOnWindowFocus,
     refetchOnMount,
   });

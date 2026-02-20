@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -31,7 +31,7 @@ const variants = {
 
 const transition = {
   duration: 0.4,
-  ease: [0.22, 1, 0.36, 1], // Custom easing for smooth feel
+  ease: [0.22, 1, 0.36, 1] as const, // Custom cubic-bezier for smooth feel
 };
 
 export function PageTransition({ children, variant = "slideScale" }: PageTransitionProps) {
