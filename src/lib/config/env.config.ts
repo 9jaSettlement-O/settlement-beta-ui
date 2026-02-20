@@ -12,8 +12,8 @@ interface EnvConfig {
   PROD: boolean;
 }
 
-/** Default API URL for GitHub Pages QA when secret is not set */
-const GITHUB_PAGES_API_FALLBACK = "https://9jasettlement.com/api";
+/** Default API URL when VITE_APP_API_URL is not set (e.g. Amplify, Vercel, GitHub Pages preview) */
+const API_URL_FALLBACK = "https://9jasettlement.com/api";
 
 /**
  * Validate required environment variables
@@ -22,17 +22,14 @@ function validateEnv(): EnvConfig {
   let apiUrl = import.meta.env.VITE_APP_API_URL;
 
   if (!apiUrl) {
-    const isGitHubPages =
-      typeof window !== "undefined" && window.location.hostname.includes("github.io");
-    if (isGitHubPages) {
+    if (typeof window !== "undefined") {
       console.warn(
-        "VITE_APP_API_URL not set. Using fallback for GitHub Pages QA."
+        "VITE_APP_API_URL not set. Using fallback. Set VITE_APP_API_URL in your hosting env (e.g. Amplify environment variables) for the real API."
       );
-      apiUrl = GITHUB_PAGES_API_FALLBACK;
+      apiUrl = API_URL_FALLBACK;
     } else {
-      throw new Error(
-        "VITE_APP_API_URL is not defined. Please set it in your .env file."
-      );
+      // Build-time (SSR or node): use fallback so build doesn't fail
+      apiUrl = API_URL_FALLBACK;
     }
   }
 
