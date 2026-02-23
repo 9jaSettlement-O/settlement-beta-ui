@@ -30,6 +30,8 @@ jobs:
 
       - name: Build
         env:
+          # Required for GitHub Pages: app is served at /settlement-beta-ui/, not /
+          VITE_BASE_PATH: /settlement-beta-ui/
           VITE_APP_API_URL: ${{ secrets.VITE_APP_API_URL }}
           VITE_ENCRYPTION_KEY: ${{ secrets.VITE_ENCRYPTION_KEY }}
         run: npx vite build

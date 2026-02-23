@@ -2,17 +2,40 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KycPromptBanner } from "@/components/KycPromptBanner";
+import { WalletPicker } from "@/components/wallets/WalletPicker";
 import { Wallet, ArrowRightLeft, Send, TrendingUp, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useApiQuery } from "@/hooks/use-api-query";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useWalletStore } from "@/store/wallet.store";
+import { getDashboard, persistWalletsForMock } from "@/services/wallet-service";
+import { formatAmountWithCurrency } from "@/lib/utils/currency.util";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { accountType, uid, kycCompleted, hydrateFromAuth } = useOnboardingStore();
   const { isAuthenticated, user } = useAuthStore();
+  const { wallets, selectedWallet, setSelectedWallet, hydrateFromDashboard } = useWalletStore();
   const [showBanner, setShowBanner] = useState(false);
+
+  const { data: dashboardData, isLoading: dashboardLoading } = useApiQuery({
+    queryKey: ["dashboard", "wallets"],
+    queryFn: async () => {
+      const res = await getDashboard();
+      if (!res.succeeded || !res.data) throw new Error(res.msg);
+      if (res.data.wallets?.length) persistWalletsForMock(res.data.wallets);
+      return res.data;
+    },
+    enabled: true,
+  });
+
+  useEffect(() => {
+    if (dashboardData?.wallets?.length) {
+      hydrateFromDashboard(dashboardData.wallets);
+    }
+  }, [dashboardData, hydrateFromDashboard]);
 
   // Sync onboarding from auth when logged in (e.g. after refresh) so banner and KYC route have uid/accountType
   useEffect(() => {
@@ -77,7 +100,7 @@ const Dashboard = () => {
       enabled: isVerified,
       action: () =>
         isVerified
-          ? toast.info("Convert currency coming soon")
+          ? navigate("/convert-money")
           : handleRestrictedAction("convert currency"),
     },
     {
@@ -104,6 +127,34 @@ const Dashboard = () => {
         </div>
 
         <motion.div layout className="space-y-6" transition={{ layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}>
+          {!dashboardLoading && wallets.length > 0 && (
+            <motion.div
+              layout
+              className="rounded-xl border bg-primary/5 p-6"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <p className="text-sm font-medium text-muted-foreground">Your balance</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <span className="text-2xl font-bold">
+                  {selectedWallet
+                    ? formatAmountWithCurrency(
+                        parseFloat(selectedWallet.available_balance),
+                        selectedWallet.country.currency_code
+                      )
+                    : "—"}
+                </span>
+                <WalletPicker
+                  wallets={wallets}
+                  selectedWallet={selectedWallet}
+                  onSelect={setSelectedWallet}
+                  textColor="default"
+                />
+              </div>
+            </motion.div>
+          )}
+
           <AnimatePresence>
             {showBanner && effectiveAccountType && (
               <motion.div

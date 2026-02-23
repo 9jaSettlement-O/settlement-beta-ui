@@ -20,6 +20,9 @@ export const STORAGE_KEYS = {
   // OTP Storage (temporary - these are prefixed keys)
   EMAIL_OTP_PREFIX: "email_otp_",
   PHONE_OTP_PREFIX: "phone_otp_",
+
+  // Wallets / Dashboard (mock data when no API)
+  WALLETS_DASHBOARD_MOCK: "wallets_dashboard_mock",
 } as const;
 
 /**
