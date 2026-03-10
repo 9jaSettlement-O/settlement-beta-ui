@@ -2,6 +2,7 @@ import { type ReactNode, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppLogo from "@/components/AppLogo";
 import { ProgressStepper } from "@/components/ui/progress";
+import { DecorativeLogoBackground } from "@/components/onboarding/DecorativeLogoBackground";
 
 interface Step {
   id: string;
@@ -73,8 +74,9 @@ export function VerificationLayout({
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start pt-8 pb-8 px-4 bg-background">
-      <div className={`w-full ${maxWidthClasses[maxWidth]} flex flex-col`}>
+    <main className="relative flex min-h-screen flex-col items-center justify-start pt-8 pb-8 px-4 bg-background">
+      <DecorativeLogoBackground />
+      <div className={`relative z-10 w-full ${maxWidthClasses[maxWidth]} flex flex-col`}>
         {/* Fixed Header - Logo - No animation, stays in place */}
         <div className="flex flex-col items-center flex-shrink-0 mb-8">
           <AppLogo className="mb-6" />

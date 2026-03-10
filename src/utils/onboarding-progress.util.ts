@@ -1,5 +1,5 @@
 import storage from "./storage.util";
-import type { AccountType } from "@/types/onboarding.types";
+import type { AccountType, OnboardingRequirement } from "@/types/onboarding.types";
 import logger from "./logger.util";
 import { STORAGE_KEYS, ONBOARDING } from "@/lib/constants";
 
@@ -53,6 +53,7 @@ interface OnboardingProgress {
   businessDetails?: SafeBusinessDetails;
   phone?: string; // Only if verified
   phoneVerified?: boolean;
+  requirements?: OnboardingRequirement[];
   // Explicitly excluded: password, pin, nin, otp, tokens
 }
 
@@ -109,8 +110,9 @@ export function saveOnboardingProgress(progress: Partial<OnboardingProgress>): b
       businessDetails: progress.businessDetails,
       phone: progress.phone,
       phoneVerified: progress.phoneVerified ?? false,
+      requirements: progress.requirements,
     };
-    
+
     // Generate checksum for integrity
     const checksum = generateChecksum(progressData);
     const dataWithChecksum = {

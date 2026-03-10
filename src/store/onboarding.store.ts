@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import type { AccountType, OnboardingState } from "@/types/onboarding.types";
+import type {
+  AccountType,
+  OnboardingState,
+  OnboardingStep,
+  OnboardingRequirement,
+} from "@/types/onboarding.types";
 import {
   saveOnboardingProgress,
   loadOnboardingProgress,
@@ -7,8 +12,20 @@ import {
   type SafeBiodata,
 } from "@/utils/onboarding-progress.util";
 
+const STEP_ORDER: OnboardingStep[] = [
+  "account_type",
+  "create_account",
+  "verify_email",
+  "individual",
+  "agent",
+  "business",
+];
+
 interface OnboardingStore extends OnboardingState {
   currentStep: string;
+  requirements: OnboardingRequirement[];
+  loading: boolean;
+  error: string | null;
   biodata?: SafeBiodata;
   agentProfile?: {
     uniqueAgentId?: string;
@@ -22,6 +39,11 @@ interface OnboardingStore extends OnboardingState {
   phone?: string;
   phoneVerified?: boolean;
   setAccountType: (type: AccountType) => void;
+  setRequirements: (requirements: OnboardingRequirement[]) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  nextStep: () => void;
+  prevStep: () => void;
   clearAccountSelection: () => void;
   setEmail: (email: string) => void;
   setEmailVerified: (verified: boolean) => void;
@@ -34,14 +56,30 @@ interface OnboardingStore extends OnboardingState {
   setAgentProfile: (profile: OnboardingStore["agentProfile"]) => void;
   setBusinessDetails: (details: OnboardingStore["businessDetails"]) => void;
   setPhone: (phone: string, verified?: boolean) => void;
+  /** In-memory only (not persisted): password entered on Create Account, used after OTP verify to call signup. */
+  pendingPassword: string | null;
+  setPendingPassword: (password: string | null) => void;
+  pendingReferralCode: string;
+  pendingPromoCode: string;
+  setPendingReferralCode: (code: string) => void;
+  setPendingPromoCode: (code: string) => void;
   restoreProgress: () => void;
   hydrateFromAuth: (userId: string, userType: string) => void;
   /** Reset only account-creation state so flow starts at Create Account (email/password). Used when user clicks Proceed from Select Account Type. */
   startAccountCreationFlow: () => void;
   reset: () => void;
+  resetOnboarding: () => void;
 }
 
-const initialState: OnboardingState & { currentStep: string } = {
+const initialState: OnboardingState & {
+  currentStep: string;
+  requirements: OnboardingRequirement[];
+  loading: boolean;
+  error: string | null;
+  pendingPassword: string | null;
+  pendingReferralCode: string;
+  pendingPromoCode: string;
+} = {
   accountType: null,
   email: "",
   isEmailVerified: false,
@@ -50,6 +88,12 @@ const initialState: OnboardingState & { currentStep: string } = {
   pinSetup: false,
   kycCompleted: false,
   currentStep: "",
+  requirements: [],
+  loading: false,
+  error: null,
+  pendingPassword: null,
+  pendingReferralCode: "",
+  pendingPromoCode: "",
 };
 
 const savedProgress = loadOnboardingProgress();
@@ -67,6 +111,7 @@ const initialData = savedProgress
       businessDetails: savedProgress.businessDetails,
       phone: savedProgress.phone,
       phoneVerified: savedProgress.phoneVerified,
+      requirements: savedProgress.requirements ?? [],
     }
   : initialState;
 
@@ -77,6 +122,70 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
   businessDetails: savedProgress?.businessDetails,
   phone: savedProgress?.phone,
   phoneVerified: savedProgress?.phoneVerified ?? false,
+  requirements: initialData.requirements,
+  loading: false,
+  error: null,
+  pendingPassword: null,
+  pendingReferralCode: "",
+  pendingPromoCode: "",
+
+  setPendingPassword: (password) => set({ pendingPassword: password }),
+  setPendingReferralCode: (code) => set({ pendingReferralCode: code }),
+  setPendingPromoCode: (code) => set({ pendingPromoCode: code }),
+
+  setRequirements: (requirements) => set({ requirements }),
+
+  setLoading: (loading) => set({ loading }),
+
+  setError: (error) => set({ error }),
+
+  nextStep: () => {
+    const { currentStep, accountType } = get();
+    const idx = STEP_ORDER.indexOf(currentStep as OnboardingStep);
+    if (idx < 0 || idx >= STEP_ORDER.length - 1) return;
+    let next: string = STEP_ORDER[idx + 1];
+    if (currentStep === "verify_email" && accountType) {
+      next = accountType;
+    }
+    set({ currentStep: next, error: null });
+    saveOnboardingProgress({
+      accountType: get().accountType,
+      email: get().email,
+      uid: get().uid,
+      isEmailVerified: get().isEmailVerified,
+      currentStep: next,
+      pinSetup: get().pinSetup,
+      biodata: get().biodata,
+      agentProfile: get().agentProfile,
+      businessDetails: get().businessDetails,
+      phone: get().phone,
+      phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
+    });
+  },
+
+  prevStep: () => {
+    const { currentStep } = get();
+    const idx = STEP_ORDER.indexOf(currentStep as OnboardingStep);
+    if (idx <= 0) return;
+    const prev = STEP_ORDER[idx - 1];
+    set({ currentStep: prev, error: null });
+    saveOnboardingProgress({
+      accountType: get().accountType,
+      email: get().email,
+      uid: get().uid,
+      isEmailVerified: get().isEmailVerified,
+      currentStep: prev,
+      pinSetup: get().pinSetup,
+      biodata: get().biodata,
+      agentProfile: get().agentProfile,
+      businessDetails: get().businessDetails,
+      phone: get().phone,
+      phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
+    });
+  },
+
   setAccountType: (type) => {
     const previousType = get().accountType;
     const isNewChoice = previousType != null && previousType !== type;
@@ -87,7 +196,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
         isEmailVerified: false,
         isAccountCreated: false,
         uid: null,
-        currentStep: "/create-account",
+        currentStep: "create_account",
         biodata: undefined,
         agentProfile: undefined,
         businessDetails: undefined,
@@ -95,35 +204,37 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
         phoneVerified: false,
       };
       set(cleared);
-      saveOnboardingProgress({
+    saveOnboardingProgress({
         accountType: type,
         email: "",
         uid: null,
         isEmailVerified: false,
-        currentStep: "/create-account",
+        currentStep: "create_account",
         pinSetup: false,
         biodata: undefined,
         agentProfile: undefined,
         businessDetails: undefined,
         phone: undefined,
         phoneVerified: false,
+        requirements: get().requirements,
       });
     } else {
-      set({ accountType: type });
-      saveOnboardingProgress({
-        accountType: type,
-        email: get().email,
-        uid: get().uid,
-        isEmailVerified: get().isEmailVerified,
-        currentStep: get().currentStep,
-        pinSetup: get().pinSetup,
-        biodata: get().biodata,
-        agentProfile: get().agentProfile,
-        businessDetails: get().businessDetails,
-        phone: get().phone,
-        phoneVerified: get().phoneVerified,
-      });
-    }
+    set({ accountType: type });
+    saveOnboardingProgress({
+      accountType: type,
+      email: get().email,
+      uid: get().uid,
+      isEmailVerified: get().isEmailVerified,
+      currentStep: get().currentStep,
+      pinSetup: get().pinSetup,
+      biodata: get().biodata,
+      agentProfile: get().agentProfile,
+      businessDetails: get().businessDetails,
+      phone: get().phone,
+      phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
+    });
+  }
   },
   clearAccountSelection: () => {
     set({
@@ -144,6 +255,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setEmail: (email) => {
@@ -160,6 +272,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setEmailVerified: (verified) => {
@@ -176,6 +289,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setAccountCreated: (created) => {
@@ -209,6 +323,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: isNewAccount ? undefined : get().businessDetails,
       phone: isNewAccount ? undefined : get().phone,
       phoneVerified: isNewAccount ? false : get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setPinSetup: (setup) => {
@@ -225,6 +340,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setKycCompleted: (completed) => {
@@ -247,6 +363,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setBiodata: (biodata) => {
@@ -263,6 +380,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setAgentProfile: (profile) => {
@@ -279,6 +397,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setBusinessDetails: (details) => {
@@ -295,6 +414,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: details,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   setPhone: (phone, verified = false) => {
@@ -311,6 +431,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       businessDetails: get().businessDetails,
       phone,
       phoneVerified: verified,
+      requirements: get().requirements,
     });
   },
   restoreProgress: () => {
@@ -328,6 +449,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
         businessDetails: progress.businessDetails,
         phone: progress.phone,
         phoneVerified: progress.phoneVerified ?? false,
+        requirements: progress.requirements ?? [],
       });
     }
   },
@@ -376,6 +498,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
         businessDetails: get().businessDetails,
         phone: get().phone,
         phoneVerified: get().phoneVerified,
+        requirements: get().requirements,
       });
     }
   },
@@ -385,24 +508,34 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       email: "",
       isEmailVerified: false,
       pinSetup: false,
-      currentStep: "/create-account",
+      currentStep: "create_account",
     });
     saveOnboardingProgress({
       accountType: get().accountType,
       email: "",
       uid: null,
       isEmailVerified: false,
-      currentStep: "/create-account",
+      currentStep: "create_account",
       pinSetup: false,
       biodata: get().biodata,
       agentProfile: get().agentProfile,
       businessDetails: get().businessDetails,
       phone: get().phone,
       phoneVerified: get().phoneVerified,
+      requirements: get().requirements,
     });
   },
   reset: () => {
     clearOnboardingProgress();
     set(initialState);
+  },
+
+  resetOnboarding: () => {
+    set({
+      currentStep: "account_type",
+      requirements: [],
+      loading: false,
+      error: null,
+    });
   },
 }));

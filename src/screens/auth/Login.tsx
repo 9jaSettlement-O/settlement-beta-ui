@@ -13,6 +13,8 @@ import { clearDeviceHint, setReturning } from "@/utils/device-hint.util";
 import { getSafeReturnTo } from "@/utils/safe-redirect.util";
 import logger from "@/utils/logger.util";
 import { PageTransition } from "@/components/transitions/PageTransition";
+import { DecorativeLogoBackground } from "@/components/onboarding/DecorativeLogoBackground";
+import AppLogo from "@/components/AppLogo";
 
 /** Mock login response when API is not available (e.g. DEV or CORS). */
 async function mockLogin(data: { email: string; password: string }) {
@@ -92,10 +94,14 @@ const Login = () => {
 
   return (
     <PageTransition variant="slideScale">
-      <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-        <div className="w-full max-w-md space-y-8">
+      <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+        <DecorativeLogoBackground />
+        <div className="relative z-10 w-full max-w-md space-y-8">
+          <div className="flex flex-col items-center flex-shrink-0 mb-6">
+            <AppLogo className="mb-6" />
+          </div>
           <div className="flex flex-col items-center">
-            <h1 className="mt-6 text-center text-3xl font-bold">Login</h1>
+            <h1 className="text-center text-3xl font-bold">Login</h1>
           </div>
 
           <Card>

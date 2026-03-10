@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { useOnboardingStore } from "@/store/onboarding.store";
+import { useAuthStore } from "@/store/auth.store";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import apiCall from "@/api/config";
-import onboardingService from "@/services/onboarding-service";
+import { verifyEmail as verifyEmailV2, signup as signupV2, resendEmailOtp } from "@/services/auth.service";
+import { parseApiError } from "@/utils/parseApiError";
 import { VERIFICATION_CONTENT_WIDTH } from "@/lib/constants";
 
 const EMAIL_RESEND_COOLDOWN = 60; // seconds
@@ -22,9 +24,22 @@ interface VerifyEmailProps {
 const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmailProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { uid: storeUid, email: storeEmail, setEmailVerified, setCurrentStep } = useOnboardingStore();
+  const {
+    uid: storeUid,
+    email: storeEmail,
+    accountType,
+    pendingPassword,
+    pendingReferralCode,
+    pendingPromoCode,
+    setEmailVerified,
+    setAccountCreated,
+    setCurrentStep,
+    setPendingPassword,
+  } = useOnboardingStore();
+  const { setToken, setUser } = useAuthStore();
   const uid = searchParams.get("uid") || storeUid || "";
   const email = searchParams.get("email") || storeEmail || "";
+  const useV2Flow = Boolean(email && pendingPassword && accountType);
   const [otp, setOtp] = useState("");
   const [resendCooldown, setResendCooldown] = useState(EMAIL_RESEND_COOLDOWN);
 
@@ -35,22 +50,48 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
     return () => clearInterval(t);
   }, [resendCooldown]);
 
-  const verifyMutation = useMutation({
-    mutationFn: async (token: string) => {
-      try {
-        const res = await apiCall.auth.verifyEmail(uid, token);
-        return res;
-      } catch (err: unknown) {
-        const status = (err as { response?: { status?: number } })?.response?.status;
-        if (status === 404 || status === 502 || status === 400) {
-          const mock = await onboardingService.verifyEmail(uid, token);
-          if (mock.succeeded) {
-            return { error: false, data: mock.data, message: mock.message };
-          }
-          throw new Error(mock.message || "Verification failed");
+  const verifyMutationV2 = useMutation({
+    mutationFn: async (otpCode: string) => {
+      await verifyEmailV2({ email, otp: otpCode });
+      const result = await signupV2({
+        email,
+        password: pendingPassword!,
+        accountType: accountType!,
+        ...(pendingReferralCode && { referralCode: pendingReferralCode }),
+        ...(pendingPromoCode && { promoCode: pendingPromoCode }),
+      });
+      return result;
+    },
+    onSuccess: (result) => {
+      setPendingPassword(null);
+      setEmailVerified(true);
+      setAccountCreated(true);
+      if (result.token) {
+        setToken(result.token);
+        if (result.user) {
+          setUser({
+            id: result.user.id,
+            email: result.user.email,
+            type: result.user.type,
+          });
         }
-        throw err;
       }
+      setCurrentStep("create_account");
+      if (embedded && onVerifySuccess) {
+        onVerifySuccess();
+      } else {
+        navigate("/onboarding-success");
+      }
+    },
+    onError: (err: Error) => {
+      toast.error(parseApiError(err).message || "Invalid or expired code. Please try again.");
+    },
+  });
+
+  const verifyMutationLegacy = useMutation({
+    mutationFn: async (token: string) => {
+      const res = await apiCall.auth.verifyEmail(uid, token);
+      return res;
     },
     onSuccess: () => {
       setEmailVerified(true);
@@ -62,27 +103,27 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
       }
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Invalid or expired code. Please try again.");
+      toast.error((err as { message?: string }).message || "Invalid or expired code. Please try again.");
     },
   });
 
+  const isVerifyPending = verifyMutationV2.isPending || verifyMutationLegacy.isPending;
+
   const resendMutation = useMutation({
     mutationFn: async () => {
-      try {
+      if (useV2Flow) {
+        await resendEmailOtp({ email });
+      } else {
         await apiCall.auth.resendOTP(email);
-        return { ok: true };
-      } catch {
-        const mock = await onboardingService.resendOTP(email);
-        if (!mock.succeeded) throw new Error(mock.message);
-        return { ok: true };
       }
+      return { ok: true };
     },
     onSuccess: () => {
       toast.success("Verification code sent. Check your email.");
       setResendCooldown(EMAIL_RESEND_COOLDOWN);
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Failed to resend code.");
+      toast.error(parseApiError(err).message || "Failed to resend code.");
     },
   });
 
@@ -92,18 +133,37 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
       toast.error("Please enter the 6-digit code.");
       return;
     }
-    verifyMutation.mutate(otp);
+    if (useV2Flow) {
+      verifyMutationV2.mutate(otp);
+    } else {
+      verifyMutationLegacy.mutate(otp);
+    }
   };
 
   const containerClass = VERIFICATION_CONTENT_WIDTH;
 
-  if (!uid || !email) {
+  if (!email) {
     return (
       <div className={containerClass}>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-muted-foreground text-center">Missing email or user. Please start from Create Account.</p>
-            <Button className="w-full mt-4" onClick={() => (embedded && onGoBack ? onGoBack() : navigate("/create-account"))}>
+            <p className="text-muted-foreground text-center">Missing email. Please start from Create Account.</p>
+            <Button className="w-full mt-4" onClick={() => (embedded && onGoBack ? onGoBack() : navigate("/onboarding"))}>
+              Go back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!useV2Flow && !uid) {
+    return (
+      <div className={containerClass}>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground text-center">Missing user. Please start from Create Account.</p>
+            <Button className="w-full mt-4" onClick={() => (embedded && onGoBack ? onGoBack() : navigate("/onboarding"))}>
               Go back
             </Button>
           </CardContent>
@@ -130,7 +190,7 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
                 maxLength={6}
                 value={otp}
                 onChange={(v) => setOtp(v.replace(/\D/g, ""))}
-                disabled={verifyMutation.isPending}
+                disabled={isVerifyPending}
                 pattern="[0-9]*"
               >
                 <InputOTPGroup>
@@ -148,9 +208,9 @@ const VerifyEmail = ({ embedded = false, onVerifySuccess, onGoBack }: VerifyEmai
               type="submit"
               className="w-full min-w-0"
               size="lg"
-              disabled={otp.length !== 6 || verifyMutation.isPending}
+              disabled={otp.length !== 6 || isVerifyPending}
             >
-              {verifyMutation.isPending ? "Verifying..." : "Verify Email"}
+              {isVerifyPending ? "Verifying..." : "Verify Email"}
             </Button>
 
             {resendCooldown > 0 ? (

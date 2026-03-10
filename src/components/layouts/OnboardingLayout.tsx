@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import AppLogo from "@/components/AppLogo";
 import { ProgressStepper } from "@/components/ui/progress";
+import { DecorativeLogoBackground } from "@/components/onboarding/DecorativeLogoBackground";
 
 interface Step {
   id: string;
@@ -31,8 +32,9 @@ export function OnboardingLayout({
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start pt-8 pb-8 px-4 bg-background">
-      <div className={`w-full ${maxWidthClasses[maxWidth]} space-y-8`}>
+    <main className="relative flex min-h-screen flex-col items-center justify-start pt-8 pb-8 px-4 bg-background">
+      <DecorativeLogoBackground />
+      <div className={`relative z-10 w-full ${maxWidthClasses[maxWidth]} space-y-8`}>
         {/* Header - Fixed position at top, doesn't move with content */}
         <div className="flex flex-col items-center flex-shrink-0">
           <AppLogo className="mb-6" />

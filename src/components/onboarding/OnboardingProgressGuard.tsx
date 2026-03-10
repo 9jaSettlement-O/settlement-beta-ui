@@ -41,9 +41,9 @@ export function OnboardingProgressGuard() {
         } else if (accountType && uid && !isEmailVerified) {
           const { email } = useOnboardingStore.getState();
           navigate(`/verify-email?uid=${uid}&email=${encodeURIComponent(email || "")}`);
-        } else if (accountType && !uid) {
-          navigate("/create-account");
         }
+        // When accountType is set but no uid yet, stay on select-account-type so the user
+        // can use the Back button from Create Account and see this screen (or change selection).
       }
     }
   }, [location.pathname, navigate, restoreProgress, accountType, isEmailVerified, uid, isAuthenticated]);

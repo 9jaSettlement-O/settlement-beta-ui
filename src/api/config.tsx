@@ -4,6 +4,7 @@ import Auth from "./auth";
 import logger from "@/utils/logger.util";
 import { navigationService } from "@/lib/navigation/navigation.util";
 import { getApiUrl } from "@/lib/config/env.config";
+import { useAuthStore } from "@/store/auth.store";
 
 const BaseURL = getApiUrl();
 
@@ -18,8 +19,7 @@ export const axiosPublic = axios.create({
 
 /**
  * Axios instance for private API requests that require authentication.
- * Automatically includes credentials and merges the Authorization header
- * from storage on every request via an interceptor.
+ * Token is read from auth store (memory only).
  */
 export const axiosPrivate = axios.create({
   baseURL: BaseURL,
@@ -27,14 +27,15 @@ export const axiosPrivate = axios.create({
 });
 
 /**
- * Axios request interceptor that adds device ID and authentication headers
+ * Axios request interceptor: add Authorization from auth store
  */
 axiosPrivate.interceptors.request.use(
   async function (config) {
-    const bearerConfig = storage.getConfigWithBearer();
+    const token = useAuthStore.getState().accessToken;
     config.headers = {
       ...config.headers,
-      ...bearerConfig.headers,
+      ...storage.getConfig().headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
     return config;
   },
@@ -63,7 +64,7 @@ axiosPrivate.interceptors.response.use(
     const { status, data } = error.response;
 
     if (status === 401 || status === 403) {
-      storage.clearAuth();
+      useAuthStore.getState().logout();
       logger.warn("Session expired. Redirecting to login...", { status });
       // Use navigation service if available, otherwise fallback to window.location
       // For auth errors, we prefer full page reload to clear all state

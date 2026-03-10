@@ -2,7 +2,7 @@ import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 
 const SelectAccountType = lazy(() => import("../screens/onboarding/SelectAccountType"));
-const AccountCreationFlow = lazy(() => import("../screens/onboarding/AccountCreationFlow"));
+const OnboardingFlow = lazy(() => import("../screens/onboarding/OnboardingFlow"));
 const SetupPin = lazy(() => import("../screens/onboarding/SetupPin"));
 const IndividualKyc = lazy(() => import("../screens/onboarding/kyc/IndividualKyc"));
 const BusinessKyb = lazy(() => import("../screens/onboarding/kyc/BusinessKyb"));
@@ -20,16 +20,20 @@ export const publicRoutes = [
     element: <SelectAccountType />,
   },
   {
+    path: "/onboarding",
+    element: <OnboardingFlow />,
+  },
+  {
     path: "/create-account",
-    element: <AccountCreationFlow />,
+    element: <Navigate to="/onboarding" replace />,
   },
   {
     path: "/verify-email",
-    element: <Navigate to="/create-account" replace />,
+    element: <Navigate to="/onboarding" replace />,
   },
   {
     path: "/onboarding-success",
-    element: <Navigate to="/create-account" replace />,
+    element: <Navigate to="/onboarding" replace />,
   },
   {
     path: "/setup-pin",

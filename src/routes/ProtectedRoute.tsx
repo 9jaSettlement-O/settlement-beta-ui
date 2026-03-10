@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import storage from "@/utils/storage.util";
+import { useAuthStore } from "@/store/auth.store";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -7,14 +7,14 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
-  const isAuthenticated = storage.checkToken();
+  const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/select-account-type" replace />;
   }
 
   if (roles && roles.length > 0) {
-    const userType = storage.getUserType();
+    const userType = user?.type ?? null;
     if (!userType || !roles.includes(userType)) {
       return <Navigate to="/dashboard" replace />;
     }

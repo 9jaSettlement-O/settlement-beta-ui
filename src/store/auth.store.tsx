@@ -1,54 +1,55 @@
 import { create } from "zustand";
-import storage from "@/utils/storage.util";
 import { clearDeviceHint } from "@/utils/device-hint.util";
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  type: string;
+}
+
 interface AuthState {
+  accessToken: string | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  user: {
-    id: string | null;
-    email: string | null;
-    type: string | null;
-  } | null;
+  setToken: (token: string | null) => void;
+  setUser: (user: AuthUser | null) => void;
   login: (token: string, id: string, type: string, email: string) => void;
   logout: () => void;
   checkAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: storage.checkToken(),
-  user: storage.checkToken()
-    ? {
-        id: storage.getUserID(),
-        email: storage.getUserEmail(),
-        type: storage.getUserType(),
-      }
-    : null,
-  login: (token, id, type, email) => {
-    storage.storeAuth(token, id, type, email);
+  accessToken: null,
+  user: null,
+  isAuthenticated: false,
+
+  setToken: (token) =>
     set({
-      isAuthenticated: true,
+      accessToken: token,
+      isAuthenticated: !!token,
+    }),
+
+  setUser: (user) => set({ user }),
+
+  login: (token, id, type, email) => {
+    set({
+      accessToken: token,
       user: { id, email, type },
+      isAuthenticated: true,
     });
   },
+
   logout: () => {
     clearDeviceHint();
-    storage.clearAuth();
     set({
-      isAuthenticated: false,
+      accessToken: null,
       user: null,
+      isAuthenticated: false,
     });
   },
+
   checkAuth: () => {
-    const isAuth = storage.checkToken();
-    set({
-      isAuthenticated: isAuth,
-      user: isAuth
-        ? {
-            id: storage.getUserID(),
-            email: storage.getUserEmail(),
-            type: storage.getUserType(),
-          }
-        : null,
-    });
+    // Token is in memory only; after refresh state is reset
+    set((state) => ({ isAuthenticated: !!state.accessToken }));
   },
 }));

@@ -77,3 +77,24 @@ export interface AgentProfileForm {
   projectedWeeklyVolume: string;
   projectedWeeklyTransactions: string;
 }
+
+/**
+ * Onboarding flow step (unified flow)
+ */
+export type OnboardingStep =
+  | "account_type"
+  | "create_account"
+  | "verify_email"
+  | "individual"
+  | "agent"
+  | "business";
+
+/**
+ * Onboarding requirement from API
+ */
+export interface OnboardingRequirement {
+  key: string;
+  label?: string;
+  required?: boolean;
+  [key: string]: unknown;
+}

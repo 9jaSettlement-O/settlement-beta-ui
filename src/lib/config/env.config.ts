@@ -13,7 +13,7 @@ interface EnvConfig {
 }
 
 /** Default API URL when VITE_APP_API_URL is not set (e.g. Amplify, Vercel, GitHub Pages preview) */
-const API_URL_FALLBACK = "https://9jasettlement.com/api";
+const API_URL_FALLBACK = "https://apis-dev.9jasettlement.com";
 
 /**
  * Validate required environment variables
@@ -58,9 +58,13 @@ export const isDev = env.DEV;
 export const isProd = env.PROD;
 
 /**
- * Get API base URL
+ * Get API base URL.
+ * Strips trailing /api so paths like /api/us/v1/... are never doubled (e.g. .../api/api/...).
  */
-export const getApiUrl = (): string => env.VITE_APP_API_URL;
+export const getApiUrl = (): string => {
+  const url = env.VITE_APP_API_URL.trim().replace(/\/api\/?$/i, "");
+  return url || "https://apis-dev.9jasettlement.com";
+};
 
 /**
  * Get encryption key (with fallback for dev/QA)

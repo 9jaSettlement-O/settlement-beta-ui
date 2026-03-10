@@ -37,10 +37,10 @@ const SelectAccountType = () => {
   const handleProceed = () => {
     if (selectedType) {
       setAccountType(selectedType);
-      // Start account-creation flow from Create Account (email/password) for all user types (Individual, Business, Agent)
-      const { startAccountCreationFlow } = useOnboardingStore.getState();
-      startAccountCreationFlow();
-      navigate("/create-account");
+      // Use unified onboarding flow: email OTP → verify OTP → signup (POST /api/us/v1/...)
+      const { setCurrentStep } = useOnboardingStore.getState();
+      setCurrentStep("create_account");
+      navigate("/onboarding");
     }
   };
 
