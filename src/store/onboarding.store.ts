@@ -64,7 +64,7 @@ interface OnboardingStore extends OnboardingState {
   setPendingReferralCode: (code: string) => void;
   setPendingPromoCode: (code: string) => void;
   restoreProgress: () => void;
-  hydrateFromAuth: (userId: string, userType: string) => void;
+  hydrateFromAuth: (userId: string, userType: string, kycCompletedFromBackend?: boolean) => void;
   /** Reset only account-creation state so flow starts at Create Account (email/password). Used when user clicks Proceed from Select Account Type. */
   startAccountCreationFlow: () => void;
   reset: () => void;
@@ -453,7 +453,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       });
     }
   },
-  hydrateFromAuth: (userId: string, userType: string) => {
+  hydrateFromAuth: (userId: string, userType: string, kycCompletedFromBackend?: boolean) => {
     const accountType = (
       userType === "individual" || userType === "agent" || userType === "business"
         ? userType
@@ -461,10 +461,12 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     ) as AccountType;
     const progress = loadOnboardingProgress();
     const matchesUser = progress && progress.uid === userId;
+    const isAlreadyVerified = kycCompletedFromBackend === true;
     set({
       uid: userId,
       accountType,
       isEmailVerified: true,
+      ...(isAlreadyVerified ? { kycCompleted: true } : {}),
       ...(matchesUser
         ? {
             pinSetup: progress.pinSetup ?? false,
@@ -485,7 +487,9 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
             currentStep: `/kyc/${accountType}?uid=${userId}`,
           }),
     });
-    if (matchesUser) {
+    if (isAlreadyVerified) {
+      clearOnboardingProgress();
+    } else if (matchesUser) {
       saveOnboardingProgress({
         accountType: get().accountType,
         email: get().email,

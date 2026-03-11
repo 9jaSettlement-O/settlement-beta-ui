@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { clearDeviceHint, setReturning } from "@/utils/device-hint.util";
 import { getSafeReturnTo } from "@/utils/safe-redirect.util";
+import { isKycVerifiedFromUser } from "@/utils/kyc-status.util";
 import logger from "@/utils/logger.util";
 import { PageTransition } from "@/components/transitions/PageTransition";
 import { DecorativeLogoBackground } from "@/components/onboarding/DecorativeLogoBackground";
@@ -73,9 +74,10 @@ const Login = () => {
       if (token && user) {
         const id = user.id || user.uid || "";
         const type = user.type || user.account_type || "individual";
+        const kycVerified = isKycVerifiedFromUser(user as Record<string, unknown>);
         setReturning();
         login(token, id, type, user.email || email);
-        useOnboardingStore.getState().hydrateFromAuth(id, type);
+        useOnboardingStore.getState().hydrateFromAuth(id, type, kycVerified);
         toast.success("Login successful");
         const target = getSafeReturnTo(returnTo);
         navigate(target);

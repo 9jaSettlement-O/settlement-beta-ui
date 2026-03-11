@@ -2,6 +2,7 @@ import { lazy } from "react";
 
 const Dashboard = lazy(() => import("../screens/dashboard/Dashboard"));
 const ConvertMoney = lazy(() => import("../screens/convert-money/ConvertMoney"));
+const SendMoney = lazy(() => import("../screens/send-money/SendMoney"));
 const IndividualKyc = lazy(() => import("../screens/onboarding/kyc/IndividualKyc"));
 const BusinessKyb = lazy(() => import("../screens/onboarding/kyc/BusinessKyb"));
 const AgentOnboarding = lazy(() => import("../screens/onboarding/kyc/AgentOnboarding"));
@@ -14,6 +15,10 @@ export const privateRoutes = [
   {
     path: "/convert-money",
     element: <ConvertMoney />,
+  },
+  {
+    path: "/send-money",
+    element: <SendMoney />,
   },
   {
     path: "/onboarding/kyc/individual",

@@ -11,11 +11,13 @@ import { useOnboardingStore } from "@/store/onboarding.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useWalletStore } from "@/store/wallet.store";
 import { getDashboard, persistWalletsForMock } from "@/services/wallet-service";
+import { getProfile } from "@/services/profile.service";
 import { formatAmountWithCurrency } from "@/lib/utils/currency.util";
+import { isKycVerifiedFromUser } from "@/utils/kyc-status.util";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { accountType, uid, kycCompleted, hydrateFromAuth } = useOnboardingStore();
+  const { accountType, uid, kycCompleted, hydrateFromAuth, setKycCompleted } = useOnboardingStore();
   const { isAuthenticated, user } = useAuthStore();
   const { wallets, selectedWallet, setSelectedWallet, hydrateFromDashboard } = useWalletStore();
   const [showBanner, setShowBanner] = useState(false);
@@ -43,6 +45,23 @@ const Dashboard = () => {
       hydrateFromAuth(user.id, user.type);
     }
   }, [isAuthenticated, user?.id, user?.type, uid, hydrateFromAuth]);
+
+  // Sync KYC status from profile when backend exposes it only on profile (e.g. existing/migrated users)
+  const { data: profileData } = useApiQuery({
+    queryKey: ["profile", "kyc-sync"],
+    queryFn: async () => {
+      const profile = await getProfile();
+      return profile as Record<string, unknown>;
+    },
+    enabled: isAuthenticated && !kycCompleted,
+    staleTime: 60_000,
+    retry: false,
+  });
+  useEffect(() => {
+    if (profileData && isKycVerifiedFromUser(profileData)) {
+      setKycCompleted(true);
+    }
+  }, [profileData, setKycCompleted]);
 
   const effectiveAccountType = accountType || (user?.type as "individual" | "agent" | "business") || null;
   const effectiveUid = uid || user?.id || "";
@@ -111,7 +130,7 @@ const Dashboard = () => {
       enabled: isVerified,
       action: () =>
         isVerified
-          ? toast.info("Send money coming soon")
+          ? navigate("/send-money")
           : handleRestrictedAction("send money"),
     },
   ];

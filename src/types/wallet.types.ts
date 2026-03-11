@@ -82,3 +82,59 @@ export interface RatesResponse {
   data: Rate[];
   errors?: unknown;
 }
+
+// --- Send Money ---
+
+export interface Bank {
+  code: string;
+  name: string;
+}
+
+export interface Beneficiary {
+  id: number;
+  receiver_id: string;   // account number or email
+  receiver_name: string;
+  receiver_bank?: string;
+  receiver_bank_code?: string;
+}
+
+export interface SendMoneyAmountState {
+  amount: number;
+  sourceWallet: Wallet;
+  note?: string;
+  recipientGets: number;
+  rate: Rate | null;
+  lockRate?: boolean;
+}
+
+export interface SendMoneyRecipientState {
+  useExisting: boolean;
+  existingBeneficiary: Beneficiary | null;
+  receiver_name: string;
+  receiver_account: string;
+  receiver_bank_code: string;
+  receiver_bank_name?: string;
+  description: string;
+}
+
+export interface SendMoneyPayload {
+  amount: number;
+  source_wallet: number;
+  platform: string;
+  note?: string;
+  receiver_account?: string;
+  receiver_name?: string;
+  receiver_bank_code?: string;
+  receiver_email?: string;
+  beneficiary?: number;
+  description?: string;
+  security_question?: string;
+  security_answer?: string;
+}
+
+export interface SendMoneyResponse {
+  succeeded: boolean;
+  message: string;
+  data?: { reference: string; amount: string; currency: string };
+  errors?: { [key: string]: string[] };
+}
