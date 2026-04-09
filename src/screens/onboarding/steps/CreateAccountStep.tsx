@@ -1,9 +1,9 @@
 /**
- * Create Account step: email + password (with acceptance criteria), optional referral/promo.
- * Submits to send OTP; on success advances to Verify Email step.
+ * Create Account: email + phone + password → request OTP (User Service).
+ * Password rules align with SignUpRequest Swagger pattern (incl. special chars @#$%^&+=!).
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding.store";
-import { sendEmailOtp } from "@/services/auth.service";
-import { parseApiError } from "@/utils/parseApiError";
+import { useAuthStore } from "@/store/auth.store";
 import { PASSWORD } from "@/lib/constants";
+import { REGEX_PATTERNS } from "@/lib/constants/validation-rules";
+
+/** Matches User Service SignUpRequest.password pattern (subset enforced in UI). */
+const PASSWORD_SPECIAL = /[@#$%^&+=!]/;
 
 export default function CreateAccountStep() {
   const navigate = useNavigate();
@@ -24,44 +27,54 @@ export default function CreateAccountStep() {
     pendingPromoCode: storedPromo,
     setEmail,
     setPendingPassword,
+    setPendingPhone,
     setPendingReferralCode,
     setPendingPromoCode,
     setCurrentStep,
-    setLoading,
     setError,
-    loading,
-    error,
   } = useOnboardingStore();
+  const requestOtp = useAuthStore((s) => s.requestOtp);
+  const authLoading = useAuthStore((s) => s.loading);
+  const authError = useAuthStore((s) => s.error);
+  const clearAuthError = useAuthStore((s) => s.clearError);
+
   const [emailInput, setEmailInput] = useState(storedEmail);
+  const [phoneInput, setPhoneInput] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState(storedReferral);
   const [promoCode, setPromoCode] = useState(storedPromo);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    clearAuthError();
+  }, [clearAuthError]);
+
   const hasMinLen = password.length >= PASSWORD.MIN_LENGTH;
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
-  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasSpecial = PASSWORD_SPECIAL.test(password);
   const passwordValid = hasMinLen && hasUpper && hasLower && hasNumber && hasSpecial;
+  const phoneValid = REGEX_PATTERNS.PHONE.test(phoneInput.trim());
+
+  const displayError = authError;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = emailInput.trim();
-    if (!value || !password || !passwordValid || !accountType) return;
-    setLoading(true);
-    setError(null);
+    const phone = phoneInput.trim();
+    if (!value || !password || !passwordValid || !accountType || !phoneValid) return;
+    useOnboardingStore.getState().setError(null);
     try {
-      await sendEmailOtp({ email: value });
+      await requestOtp(value);
       setEmail(value);
       setPendingPassword(password);
+      setPendingPhone(phone);
       setPendingReferralCode(referralCode.trim());
       setPendingPromoCode(promoCode.trim());
       setCurrentStep("verify_email");
-    } catch (err) {
-      setError(parseApiError(err).message);
-    } finally {
-      setLoading(false);
+    } catch {
+      /* `requestOtp` sets `useAuthStore` error; shown above */
     }
   };
 
@@ -76,9 +89,9 @@ export default function CreateAccountStep() {
       <div className="text-center">
         <h2 className="text-2xl font-bold">Create Account</h2>
       </div>
-      {error && (
+      {displayError && (
         <p className="text-sm text-destructive" role="alert">
-          {error}
+          {displayError}
         </p>
       )}
       <Card>
@@ -108,8 +121,27 @@ export default function CreateAccountStep() {
                 onChange={(e) => setEmailInput(e.target.value)}
                 required
                 autoComplete="email"
-                disabled={loading}
+                disabled={authLoading}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-sm">
+                Phone (E.164, e.g. +2348012345678) *
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+2348012345678"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value.trim())}
+                required
+                autoComplete="tel"
+                disabled={authLoading}
+              />
+              {!phoneInput.trim() || phoneValid ? null : (
+                <p className="text-xs text-destructive">Enter a valid phone number with country code.</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -126,7 +158,7 @@ export default function CreateAccountStep() {
                   required
                   autoComplete="new-password"
                   className="pr-10"
-                  disabled={loading}
+                  disabled={authLoading}
                 />
                 <button
                   type="button"
@@ -144,7 +176,9 @@ export default function CreateAccountStep() {
                 <li className={hasUpper ? "text-green-600" : ""}>{hasUpper ? "✓" : "○"} One uppercase letter</li>
                 <li className={hasLower ? "text-green-600" : ""}>{hasLower ? "✓" : "○"} One lowercase letter</li>
                 <li className={hasNumber ? "text-green-600" : ""}>{hasNumber ? "✓" : "○"} One number</li>
-                <li className={hasSpecial ? "text-green-600" : ""}>{hasSpecial ? "✓" : "○"} One special character</li>
+                <li className={hasSpecial ? "text-green-600" : ""}>
+                  {hasSpecial ? "✓" : "○"} One special from: @ # $ % ^ & + = !
+                </li>
               </ul>
             </div>
 
@@ -159,7 +193,7 @@ export default function CreateAccountStep() {
                   placeholder="Enter referral code"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
-                  disabled={loading}
+                  disabled={authLoading}
                 />
               </div>
               <div className="space-y-1.5">
@@ -172,7 +206,7 @@ export default function CreateAccountStep() {
                   placeholder="Enter promo code"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
-                  disabled={loading}
+                  disabled={authLoading}
                 />
               </div>
             </div>
@@ -181,9 +215,9 @@ export default function CreateAccountStep() {
               type="submit"
               className="w-full"
               size="default"
-              disabled={!emailInput.trim() || !password || !passwordValid || loading}
+              disabled={!emailInput.trim() || !phoneValid || !password || !passwordValid || authLoading}
             >
-              {loading ? "Sending OTP…" : "Create Account"}
+              {authLoading ? "Sending OTP…" : "Create Account"}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground mt-2">

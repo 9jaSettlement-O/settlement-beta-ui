@@ -1,31 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, Building2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AccountType, AccountTypeOption } from "@/types/onboarding.types";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { OnboardingLayout } from "@/components/layouts/OnboardingLayout";
 import { PageTransition } from "@/components/transitions/PageTransition";
+import { getAccountTypes } from "@/services/onboarding.service";
+import { parseApiError } from "@/utils/parseApiError";
+import { apiAccountTypeToUi } from "@/utils/account-type.util";
+import type { AccountType } from "@/types/onboarding.types";
 
-const accountTypes: AccountTypeOption[] = [
-  {
-    type: "individual",
-    title: "Individual",
-    description: "Send money to family and friends with ease",
-  },
-  {
-    type: "business",
-    title: "Business",
-    description: "Manage international payments for your business",
-  },
-  {
-    type: "agent",
-    title: "Agent",
-    description: "Help others send money and earn commissions",
-  },
-];
+const TYPE_ICONS: Record<string, typeof User> = {
+  INDIVIDUAL: User,
+  BUSINESS: Building2,
+  AGENT: Users,
+};
+
+const DISPLAY_ORDER = ["INDIVIDUAL", "AGENT", "BUSINESS"];
 
 const SelectAccountType = () => {
   const navigate = useNavigate();
@@ -33,11 +26,44 @@ const SelectAccountType = () => {
   const returnTo = searchParams.get("returnTo");
   const { setAccountType } = useOnboardingStore();
   const [selectedType, setSelectedType] = useState<AccountType | null>(null);
+  const [options, setOptions] = useState<{ type: string; title: string; description: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    getAccountTypes()
+      .then((list) => {
+        if (cancelled) return;
+        const rank = (t: string) => {
+          const i = DISPLAY_ORDER.indexOf(t.type.toUpperCase());
+          return i === -1 ? 99 : i;
+        };
+        const sorted = [...list].sort((a, b) => rank(a) - rank(b));
+        setOptions(
+          sorted.map((item) => ({
+            type: item.type,
+            title: item.label ?? item.type,
+            description: item.description ?? "",
+          }))
+        );
+      })
+      .catch((e) => {
+        if (!cancelled) setError(parseApiError(e).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleProceed = () => {
     if (selectedType) {
       setAccountType(selectedType);
-      // Use unified onboarding flow: email OTP → verify OTP → signup (POST /api/us/v1/...)
       const { setCurrentStep } = useOnboardingStore.getState();
       setCurrentStep("create_account");
       navigate("/onboarding");
@@ -46,84 +72,78 @@ const SelectAccountType = () => {
 
   return (
     <PageTransition variant="fade">
-      <OnboardingLayout
-        showStepper={false}
-        maxWidth="2xl"
-      >
+      <OnboardingLayout showStepper={false} maxWidth="2xl">
         <div className="space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Select Account Type</h1>
-        </div>
+          <div className="text-center">
+            <h1 className="text-3xl font-bold">Select Account Type</h1>
+          </div>
 
-        {/* Mobile: Left-aligned layout, Desktop: Grid layout */}
-        <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
-          {accountTypes.map((accountType) => {
-            const isSelected = selectedType === accountType.type;
-            const Icon =
-              accountType.type === "individual"
-                ? User
-                : accountType.type === "business"
-                  ? Building2
-                  : Users;
+          {error && (
+            <p className="text-center text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
 
-            return (
-              <Card
-                key={accountType.type}
-                className={cn(
-                  "cursor-pointer transition-all hover:shadow-md",
-                  isSelected && "ring-2 ring-primary ring-offset-2"
-                )}
-                onClick={() => setSelectedType(accountType.type)}
-              >
-                <CardContent className="p-6">
-                  {/* Mobile: Left-aligned with icon on left, title top-right of icon, description below */}
-                  <div className="flex items-start gap-4 md:flex-col md:items-center md:text-center md:space-y-4">
-                    {/* Icon - Left side on mobile, centered on desktop */}
-                    <div
-                      className={cn(
-                        "rounded-full p-3 flex-shrink-0",
-                        isSelected ? "bg-primary/10" : "bg-muted"
-                      )}
-                    >
-                      <Icon
-                        className={cn(
-                          "h-6 w-6",
-                          isSelected ? "text-primary" : "text-muted-foreground"
-                        )}
-                      />
-                    </div>
-                    {/* Text content - Top-right of icon on mobile (aligned with icon top), centered on desktop */}
-                    <div className="flex-1 md:text-center">
-                      <h3 className="font-semibold text-lg leading-tight">{accountType.title}</h3>
-                      <p className="text-sm text-muted-foreground opacity-75 mt-1.5">
-                        {accountType.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
+            {loading && (
+              <p className="col-span-full text-center text-muted-foreground text-sm">Loading account types…</p>
+            )}
+            {!loading &&
+              options.map((accountType) => {
+                const uiType = apiAccountTypeToUi(accountType.type);
+                const isSelected = selectedType === uiType;
+                const Icon = TYPE_ICONS[accountType.type.toUpperCase()] ?? User;
 
-        <Button
-          onClick={handleProceed}
-          disabled={!selectedType}
-          className="w-full"
-          size="lg"
-        >
-          Proceed
-        </Button>
+                return (
+                  <Card
+                    key={accountType.type}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      isSelected && "ring-2 ring-primary ring-offset-2"
+                    )}
+                    onClick={() => setSelectedType(uiType)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4 md:flex-col md:items-center md:text-center md:space-y-4">
+                        <div
+                          className={cn(
+                            "rounded-full p-3 flex-shrink-0",
+                            isSelected ? "bg-primary/10" : "bg-muted"
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "h-6 w-6",
+                              isSelected ? "text-primary" : "text-muted-foreground"
+                            )}
+                          />
+                        </div>
+                        <div className="flex-1 md:text-center">
+                          <h3 className="font-semibold text-lg leading-tight">{accountType.title}</h3>
+                          <p className="text-sm text-muted-foreground opacity-75 mt-1.5">
+                            {accountType.description}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Already have an account?{" "}
-          <Link
-            to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"}
-            className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
-          >
-            Log in
-          </Link>
-        </p>
+          <Button onClick={handleProceed} disabled={!selectedType || loading} className="w-full" size="lg">
+            Proceed
+          </Button>
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Already have an account?{" "}
+            <Link
+              to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"}
+              className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
+            >
+              Log in
+            </Link>
+          </p>
         </div>
       </OnboardingLayout>
     </PageTransition>

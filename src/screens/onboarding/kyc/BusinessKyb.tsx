@@ -9,13 +9,11 @@ import { ArrowLeft } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useMutation } from "@tanstack/react-query";
 import apiCall from "@/api/config";
-import onboardingService from "@/services/onboarding-service";
 import { toast } from "sonner";
 import { OnboardingLayout } from "@/components/layouts/OnboardingLayout";
 import { PageTransition } from "@/components/transitions/PageTransition";
 import SumsubKyc from "./SumsubKyc";
 import { getCountryName, getSortedCountries } from "@/lib/utils/countries";
-import logger from "@/utils/logger.util";
 
 type BusinessStep = "business-details" | "sumsub";
 
@@ -45,35 +43,8 @@ const BusinessKyb = () => {
 
   const saveBusinessDetailsMutation = useMutation({
     mutationFn: async (data: { country: string; businessName: string }) => {
-      if (import.meta.env.DEV) {
-        logger.debug("[BusinessKyb] DEV mode: Using mock service for business details");
-        const mockResponse = await onboardingService.saveBiodata(data as any);
-        if (mockResponse.error) {
-          const mockError = new Error(mockResponse.message);
-          (mockError as any).errors = mockResponse.errors;
-          throw mockError;
-        }
-        return { error: false, data: mockResponse.data, message: mockResponse.message, errors: [], status: mockResponse.status };
-      }
-      try {
-        const response = await apiCall.client.post("/account/business-details", data, false);
-        return response.data;
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const shouldUseMock = status === 400 || status === 404 || status === 502 || isNetworkError;
-        if (shouldUseMock) {
-          logger.debug("API not available, using mock for business details", { status });
-          const mockResponse = await onboardingService.saveBiodata(data as any);
-          if (mockResponse.error) {
-            const mockError = new Error(mockResponse.message);
-            (mockError as any).errors = mockResponse.errors;
-            throw mockError;
-          }
-          return { error: false, data: mockResponse.data, message: mockResponse.message, errors: [], status: mockResponse.status };
-        }
-        throw error;
-      }
+      const response = await apiCall.client.post("/account/business-details", data, false);
+      return response.data;
     },
     onSuccess: () => {
       saveBusinessDetails({ country, businessName });

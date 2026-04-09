@@ -5,6 +5,9 @@
  */
 
 export const STORAGE_KEYS = {
+  /** Zustand persist key for auth store (access + refresh + user snapshot) */
+  AUTH_STORE_PERSIST: "settlement_auth_store_v1",
+
   // Authentication
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",

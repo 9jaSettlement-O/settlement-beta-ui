@@ -59,6 +59,9 @@ interface OnboardingStore extends OnboardingState {
   /** In-memory only (not persisted): password entered on Create Account, used after OTP verify to call signup. */
   pendingPassword: string | null;
   setPendingPassword: (password: string | null) => void;
+  /** In-memory only: phone for SignUpRequest (required by User Service Swagger). */
+  pendingPhone: string | null;
+  setPendingPhone: (phone: string | null) => void;
   pendingReferralCode: string;
   pendingPromoCode: string;
   setPendingReferralCode: (code: string) => void;
@@ -77,6 +80,7 @@ const initialState: OnboardingState & {
   loading: boolean;
   error: string | null;
   pendingPassword: string | null;
+  pendingPhone: string | null;
   pendingReferralCode: string;
   pendingPromoCode: string;
 } = {
@@ -92,6 +96,7 @@ const initialState: OnboardingState & {
   loading: false,
   error: null,
   pendingPassword: null,
+  pendingPhone: null,
   pendingReferralCode: "",
   pendingPromoCode: "",
 };
@@ -126,10 +131,12 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
   loading: false,
   error: null,
   pendingPassword: null,
+  pendingPhone: null,
   pendingReferralCode: "",
   pendingPromoCode: "",
 
   setPendingPassword: (password) => set({ pendingPassword: password }),
+  setPendingPhone: (phone) => set({ pendingPhone: phone }),
   setPendingReferralCode: (code) => set({ pendingReferralCode: code }),
   setPendingPromoCode: (code) => set({ pendingPromoCode: code }),
 
@@ -202,6 +209,8 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
         businessDetails: undefined,
         phone: undefined,
         phoneVerified: false,
+        pendingPhone: null,
+        pendingPassword: null,
       };
       set(cleared);
     saveOnboardingProgress({
@@ -454,9 +463,10 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     }
   },
   hydrateFromAuth: (userId: string, userType: string, kycCompletedFromBackend?: boolean) => {
+    const normalized = userType.toLowerCase();
     const accountType = (
-      userType === "individual" || userType === "agent" || userType === "business"
-        ? userType
+      normalized === "individual" || normalized === "agent" || normalized === "business"
+        ? normalized
         : "individual"
     ) as AccountType;
     const progress = loadOnboardingProgress();
@@ -513,6 +523,8 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       isEmailVerified: false,
       pinSetup: false,
       currentStep: "create_account",
+      pendingPassword: null,
+      pendingPhone: null,
     });
     saveOnboardingProgress({
       accountType: get().accountType,

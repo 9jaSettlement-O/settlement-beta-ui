@@ -5,7 +5,6 @@ import { useOnboardingStore } from "@/store/onboarding.store";
 import { useMutation } from "@tanstack/react-query";
 import apiCall from "@/api/config";
 import { toast } from "sonner";
-import onboardingService from "@/services/onboarding-service";
 import logger from "@/utils/logger.util";
 import { SUMSUB_SDK_ENABLED } from "@/lib/constants";
 
@@ -29,48 +28,8 @@ const SumsubKyc = ({ onComplete }: SumsubKycProps) => {
 
   const getKycTokenMutation = useMutation({
     mutationFn: async (uid: string) => {
-      // In development, skip API call and go straight to mock service
-      if (import.meta.env.DEV) {
-        logger.debug("[SumsubKyc] DEV mode: Using mock service directly for KYC token");
-        const mockResponse = await onboardingService.getKycToken(uid);
-        if (mockResponse.error) {
-          const mockError = new Error(mockResponse.message);
-          (mockError as any).errors = mockResponse.errors;
-          throw mockError;
-        }
-        return mockResponse.data as string;
-      }
-
-      // Production: Try real API first, fallback to mock service on error
-      try {
-        const response = await apiCall.auth.getKycToken(uid);
-        return response.data as string;
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const isTransformedError = error?.error === true;
-        const shouldUseMock = 
-          status === 400 || 
-          status === 404 || 
-          status === 502 || 
-          isNetworkError ||
-          isTransformedError;
-        
-        if (shouldUseMock) {
-          logger.debug("API error, using mock service for KYC token", { status, error: error?.message || String(error) });
-          const mockResponse = await onboardingService.getKycToken(uid);
-          if (mockResponse.error) {
-            const mockError = new Error(mockResponse.message);
-            (mockError as any).errors = mockResponse.errors;
-            throw mockError;
-          }
-          return mockResponse.data as string;
-        } else {
-          // For other errors (like 401, 403, 500), throw the original error
-          logger.warn("KYC token request failed with non-mockable error", { status });
-          throw error;
-        }
-      }
+      const response = await apiCall.auth.getKycToken(uid);
+      return response.data as string;
     },
     onSuccess: (token) => {
       // Initialize Sumsub SDK
@@ -208,11 +167,11 @@ const SumsubKyc = ({ onComplete }: SumsubKycProps) => {
       return;
     }
 
-    // Mock / no SDK: Sumsub is not integrated when using mock services; route to dashboard
+    // When Sumsub SDK is not loaded (e.g. env flag off), redirect to dashboard
     if (!SUMSUB_SDK_ENABLED) {
       if (redirectToDashboardTriggeredRef.current) return;
       redirectToDashboardTriggeredRef.current = true;
-      logger.debug("[SumsubKyc] Sumsub SDK not enabled (mock mode); routing to dashboard");
+      logger.debug("[SumsubKyc] Sumsub SDK not enabled; routing to dashboard");
       toast.info(
         "Identity verification coming soon. You've been taken to your dashboard.",
         { duration: 5000 }

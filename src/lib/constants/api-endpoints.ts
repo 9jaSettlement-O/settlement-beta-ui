@@ -1,44 +1,40 @@
 /**
- * API Endpoints Constants
- * 
- * Centralized definition of all API endpoints used in the application.
- * This ensures consistency and makes it easier to update endpoints.
+ * API Endpoints — User Service (`/api/us/v1`) where documented in Swagger.
+ * Some flows still point at legacy `/api/as/v1` until confirmed on the new stack.
  */
 
+const API_US_V1 = "/api/us/v1";
+const API_AS_V1 = "/api/as/v1";
+
 export const API_ENDPOINTS = {
-  // Authentication & Account
   AUTH: {
-    REGISTER: "/account/register/",
-    LOGIN: "/account/login/",
-    LOGOUT: "/account/logout/",
-    REFRESH_TOKEN: "/account/refresh-token/",
-    FORGOT_PASSWORD: "/account/forgot-password/",
-    // PASSWORD_RESET_CONFIRM: "/account/password-reset/confirm/", // when backend supports token + newPassword
+    REGISTER: `${API_US_V1}/auth/signup`,
+    LOGIN: `${API_US_V1}/auth/login`,
+    LOGOUT: `${API_US_V1}/auth/logout`,
+    REFRESH_TOKEN: `${API_US_V1}/auth/refresh-token`,
+    FORGOT_PASSWORD: `${API_US_V1}/auth/forgot-password`,
   },
 
-  // Account Activation & Verification
   ACCOUNT: {
-    ACTIVATE: "/account/activate/",
-    ACTIVATION: "/account/activation/", // GET with email query param
-    KYC_TOKEN: "/account/activation/kyc-token/",
-    SET_PIN: (uid: string) => `/account/set-pin/${uid}/`,
-    PROFILE: "/account/profile/",
-    AGENT_PROFILE: "/account/agent-profile/",
+    ACTIVATE: `${API_US_V1}/auth/verify-email`,
+    /** Same as email-otp; Swagger has no separate resend route */
+    ACTIVATION: `${API_US_V1}/auth/email-otp`,
+    KYC_TOKEN: `${API_US_V1}/kyc/init`,
+    SET_PIN: (uid: string) => `${API_AS_V1}/account/set-pin/${uid}`,
+    PROFILE: `${API_US_V1}/profile`,
+    AGENT_PROFILE: `${API_AS_V1}/users/kyc/agent/profile`,
   },
 
-  // Phone Verification
   PHONE: {
-    SEND_OTP: "/account/send-otp/",
-    VERIFY_OTP: "/account/verify-otp/",
+    SEND_OTP: `${API_AS_V1}/users/phone/send-otp`,
+    VERIFY_OTP: `${API_AS_V1}/users/phone/verify-otp`,
   },
 
-  // KYC/KYB (future endpoints)
   KYC: {
-    STATUS: "/kyc/status/",
-    DOCUMENTS: "/kyc/documents/",
+    STATUS: `${API_US_V1}/kyc/status`,
+    DOCUMENTS: `${API_US_V1}/kyc/documents`,
   },
 
-  // Wallet (future endpoints)
   WALLET: {
     BALANCE: "/wallet/balance/",
     TRANSACTIONS: "/wallet/transactions/",
@@ -46,9 +42,6 @@ export const API_ENDPOINTS = {
   },
 } as const;
 
-/**
- * Helper function to build endpoint with query parameters
- */
 export function buildEndpoint(
   baseEndpoint: string,
   params?: Record<string, string | number>

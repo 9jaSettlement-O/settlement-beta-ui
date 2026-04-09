@@ -2,7 +2,6 @@ import type { AxiosInstance } from "axios";
 import type { IAPIResponse } from "@/types/api.types";
 import { BaseService } from "@/services/api/base.service";
 import { API_ENDPOINTS } from "@/lib/constants";
-
 class Auth extends BaseService {
   constructor(axiosPublic: AxiosInstance, axiosPrivate: AxiosInstance) {
     super(axiosPublic, axiosPrivate);
@@ -29,18 +28,17 @@ class Auth extends BaseService {
   }
 
   /**
-   * Resend OTP
+   * Resend OTP (backend: POST /api/as/v1/users/auth/resend-email-otp with { email })
    */
   async resendOTP(email: string): Promise<IAPIResponse> {
-    const endpoint = `${API_ENDPOINTS.ACCOUNT.ACTIVATION}?email=${encodeURIComponent(email)}`;
-    return this.get(endpoint, false);
+    return this.post(API_ENDPOINTS.ACCOUNT.ACTIVATION, { email }, false);
   }
 
   /**
-   * Login user
+   * Login — User Service body is `{ email, password }` only (see /v3/api-docs).
    */
   async login(data: { email: string; password: string }): Promise<IAPIResponse> {
-    return this.post(API_ENDPOINTS.AUTH.LOGIN, data, false);
+    return this.post(API_ENDPOINTS.AUTH.LOGIN, { email: data.email, password: data.password }, false);
   }
 
   /**

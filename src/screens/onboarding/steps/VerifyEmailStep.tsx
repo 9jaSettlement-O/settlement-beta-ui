@@ -1,5 +1,5 @@
 /**
- * Verify Email step: enter OTP sent to email. On verify, calls signup and advances to KYC/KYB step.
+ * Verify Email step: enter OTP sent to email. On verify, completes signup + session (User Service).
  */
 
 import { useState } from "react";
@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOnboardingStore } from "@/store/onboarding.store";
-import { resendEmailOtp, verifyEmail, signup } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
+import { resendEmailOtp } from "@/services/auth.service";
 import { parseApiError } from "@/utils/parseApiError";
+import { uiAccountTypeToApi } from "@/utils/account-type.util";
 
 export default function VerifyEmailStep() {
   const {
@@ -18,16 +19,20 @@ export default function VerifyEmailStep() {
     setEmailVerified,
     setAccountCreated,
     pendingPassword,
+    pendingPhone,
     pendingReferralCode,
     pendingPromoCode,
     setCurrentStep,
     setPendingPassword,
+    setPendingPhone,
+    setUid,
     setLoading,
     setError,
     loading,
     error,
   } = useOnboardingStore();
-  const { setToken, setUser } = useAuthStore();
+  const completeEmailVerification = useAuthStore((s) => s.completeEmailVerification);
+  const clearAuthError = useAuthStore((s) => s.clearError);
   const [otp, setOtp] = useState("");
 
   const handleResendOtp = async () => {
@@ -41,34 +46,29 @@ export default function VerifyEmailStep() {
   };
 
   const handleVerifyOtp = async () => {
-    if (!email.trim() || !otp.trim() || !pendingPassword || !accountType) return;
+    if (!email.trim() || !otp.trim() || !pendingPassword || !pendingPhone?.trim() || !accountType) return;
     setLoading(true);
     setError(null);
+    clearAuthError();
     try {
-      await verifyEmail({ email, otp });
-      const result = await signup({
+      const { userId } = await completeEmailVerification({
         email,
+        otpCode: otp,
         password: pendingPassword,
-        accountType,
-        ...(pendingReferralCode && { referralCode: pendingReferralCode }),
-        ...(pendingPromoCode && { promoCode: pendingPromoCode }),
+        phone: pendingPhone.trim(),
+        accountType: uiAccountTypeToApi(accountType),
+        ...(pendingReferralCode ? { referralCode: pendingReferralCode } : {}),
+        ...(pendingPromoCode ? { promoCode: pendingPromoCode } : {}),
       });
-      if (result.token) {
-        setToken(result.token);
-        if (result.user) {
-          setUser({
-            id: result.user.id,
-            email: result.user.email,
-            type: result.user.type,
-          });
-        }
-      }
+      setUid(userId);
       setPendingPassword(null);
+      setPendingPhone(null);
       setEmailVerified(true);
       setAccountCreated(true);
       setCurrentStep(accountType);
     } catch (err) {
-      setError(parseApiError(err).message);
+      const fromStore = useAuthStore.getState().error;
+      setError(fromStore || parseApiError(err).message);
     } finally {
       setLoading(false);
     }
@@ -86,9 +86,7 @@ export default function VerifyEmailStep() {
           {error}
         </p>
       )}
-      <p className="text-sm text-muted-foreground">
-        We sent a 6-digit code to {email}
-      </p>
+      <p className="text-sm text-muted-foreground">We sent a 6-digit code to {email}</p>
       <div className="space-y-2">
         <Label htmlFor="otp">Verification code</Label>
         <Input

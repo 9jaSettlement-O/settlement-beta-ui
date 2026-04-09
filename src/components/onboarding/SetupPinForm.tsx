@@ -5,11 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import apiCall from "@/api/config";
-import onboardingService from "@/services/onboarding-service";
 import { toast } from "sonner";
 import { encryptPin } from "@/lib/utils/onboarding";
 import { pinSetupSchema } from "@/lib/validations/onboarding";
-import logger from "@/utils/logger.util";
 import { API_ENDPOINTS, VERIFICATION_CONTENT_WIDTH } from "@/lib/constants";
 
 interface SetupPinFormProps {
@@ -59,40 +57,11 @@ export function SetupPinForm({ uid, onSuccess, onError, onBack }: SetupPinFormPr
         throw new Error(firstError?.message || "Invalid PIN");
       }
 
-      // In development, skip API call and go straight to mock service
-      if (import.meta.env.DEV) {
-        logger.debug("[SetupPinForm] DEV mode: Using mock service directly for PIN setup");
-        return onboardingService.setupPin(uid, pinData.pin);
-      }
-
-      // Production: Try real API first, fallback to mock service on error
-      try {
-        const encryptedPin = encryptPin(pinData.pin);
-        const response = await apiCall.client.post(API_ENDPOINTS.ACCOUNT.SET_PIN(uid), {
-          pin: encryptedPin,
-        }, false);
-        return response.data;
-      } catch (error: any) {
-        // Check if it's a 400, 404, 502, or network error - use mock service
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const isTransformedError = error?.error === true;
-        const shouldUseMock = 
-          status === 400 || 
-          status === 404 || 
-          status === 502 || 
-          isNetworkError ||
-          isTransformedError;
-        
-        if (shouldUseMock) {
-          logger.debug("API not available, using mock service for PIN setup", { status, error: error?.message || String(error) });
-          return onboardingService.setupPin(uid, pinData.pin);
-        } else {
-          // For other errors (like 401, 403, 500), throw the original error
-          logger.warn("PIN setup failed with non-mockable error", { status });
-          throw error;
-        }
-      }
+      const encryptedPin = encryptPin(pinData.pin);
+      const response = await apiCall.client.post(API_ENDPOINTS.ACCOUNT.SET_PIN(uid), {
+        pin: encryptedPin,
+      }, false);
+      return response.data;
     },
     onSuccess: () => {
       toast.success("Your transaction PIN has been set successfully.");

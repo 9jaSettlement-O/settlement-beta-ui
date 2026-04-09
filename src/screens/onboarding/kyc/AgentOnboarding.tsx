@@ -9,14 +9,12 @@ import { ArrowLeft } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useMutation } from "@tanstack/react-query";
 import apiCall from "@/api/config";
-import onboardingService from "@/services/onboarding-service";
 import { toast } from "sonner";
 import { VerificationLayout } from "@/components/layouts/VerificationLayout";
 import { SetupPinForm } from "@/components/onboarding/SetupPinForm";
 import SumsubKyc from "./SumsubKyc";
 import KycSuccess from "./KycSuccess";
 import { biodataSchema, phoneVerificationSchema, agentProfileSchema } from "@/lib/validations/onboarding";
-import logger from "@/utils/logger.util";
 import { API_ENDPOINTS, OTP, AGENT_VOLUME_TIERS, AGENT_REWARD_NGN_PER_CAD } from "@/lib/constants";
 import { BiodataForm, type BiodataFormValues } from "@/components/onboarding/BiodataForm";
 import { PhoneNumberEntry, PhoneNumberVerify } from "@/components/onboarding/PhoneVerificationSteps";
@@ -105,59 +103,8 @@ const AgentOnboarding = () => {
 
   const sendPhoneOTPMutation = useMutation({
     mutationFn: async (phone: string) => {
-      // In development, skip API call and go straight to mock service
-      if (import.meta.env.DEV) {
-        logger.debug("[AgentOnboarding] DEV mode: Using mock service directly for phone OTP");
-        const mockResponse = await onboardingService.sendPhoneOTP(phone);
-        if (mockResponse.error) {
-          const mockError = new Error(mockResponse.message);
-          (mockError as any).errors = mockResponse.errors;
-          throw mockError;
-        }
-        return {
-          error: false,
-          data: mockResponse.data,
-          message: mockResponse.message,
-          errors: [],
-          status: mockResponse.status,
-        };
-      }
-
-      // Production: Try real API first, fallback to mock service on error
-      try {
-        const response = await apiCall.auth.sendPhoneOTP(phone);
-        return response;
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const isTransformedError = error?.error === true;
-        const shouldUseMock = 
-          status === 400 || 
-          status === 404 || 
-          status === 502 || 
-          isNetworkError ||
-          isTransformedError;
-        
-        if (shouldUseMock) {
-          logger.debug("API not available, using mock service for phone OTP", { status, error: error?.message || String(error) });
-          const mockResponse = await onboardingService.sendPhoneOTP(phone);
-          if (mockResponse.error) {
-            const mockError = new Error(mockResponse.message);
-            (mockError as any).errors = mockResponse.errors;
-            throw mockError;
-          }
-          return {
-            error: false,
-            data: mockResponse.data,
-            message: mockResponse.message,
-            errors: [],
-            status: mockResponse.status,
-          };
-        } else {
-          logger.warn("Phone OTP send failed with non-mockable error", { status });
-          throw error;
-        }
-      }
+      const response = await apiCall.auth.sendPhoneOTP(phone);
+      return response;
     },
     onSuccess: () => {
       toast.success("Verification code sent to your phone number");
@@ -173,59 +120,8 @@ const AgentOnboarding = () => {
 
   const saveBiodataMutation = useMutation({
     mutationFn: async (data: BiodataFormValues & { dateOfBirth: string }) => {
-      // In development, skip API call and go straight to mock service
-      if (import.meta.env.DEV) {
-        logger.debug("[AgentOnboarding] DEV mode: Using mock service directly for biodata");
-        const mockResponse = await onboardingService.saveBiodata(data);
-        if (mockResponse.error) {
-          const mockError = new Error(mockResponse.message);
-          (mockError as any).errors = mockResponse.errors;
-          throw mockError;
-        }
-        return {
-          error: false,
-          data: mockResponse.data,
-          message: mockResponse.message,
-          errors: [],
-          status: mockResponse.status,
-        };
-      }
-
-      // Production: Try real API first, fallback to mock service on error
-      try {
-        const response = await apiCall.auth.saveBiodata(data);
-        return response;
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const isTransformedError = error?.error === true;
-        const shouldUseMock = 
-          status === 400 || 
-          status === 404 || 
-          status === 502 || 
-          isNetworkError ||
-          isTransformedError;
-        
-        if (shouldUseMock) {
-          logger.debug("API not available, using mock service for biodata", { status, error: error?.message || String(error) });
-          const mockResponse = await onboardingService.saveBiodata(data);
-          if (mockResponse.error) {
-            const mockError = new Error(mockResponse.message);
-            (mockError as any).errors = mockResponse.errors;
-            throw mockError;
-          }
-          return {
-            error: false,
-            data: mockResponse.data,
-            message: mockResponse.message,
-            errors: [],
-            status: mockResponse.status,
-          };
-        } else {
-          logger.warn("Biodata save failed with non-mockable error", { status });
-          throw error;
-        }
-      }
+      const response = await apiCall.auth.saveBiodata(data);
+      return response;
     },
     onSuccess: () => {
       toast.success("Your personal information has been saved successfully.");
@@ -251,59 +147,8 @@ const AgentOnboarding = () => {
 
   const verifyPhoneMutation = useMutation({
     mutationFn: async ({ phone, otp }: { phone: string; otp: string }) => {
-      // In development, skip API call and go straight to mock service
-      if (import.meta.env.DEV) {
-        logger.debug("[AgentOnboarding] DEV mode: Using mock service directly for phone verification");
-        const mockResponse = await onboardingService.verifyPhone(phone, otp);
-        if (mockResponse.error) {
-          const mockError = new Error(mockResponse.message);
-          (mockError as any).errors = mockResponse.errors;
-          throw mockError;
-        }
-        return {
-          error: false,
-          data: mockResponse.data,
-          message: mockResponse.message,
-          errors: [],
-          status: mockResponse.status,
-        };
-      }
-
-      // Production: Try real API first, fallback to mock service on error
-      try {
-        const response = await apiCall.auth.verifyPhone(phone, otp);
-        return response;
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const isTransformedError = error?.error === true;
-        const shouldUseMock = 
-          status === 400 || 
-          status === 404 || 
-          status === 502 || 
-          isNetworkError ||
-          isTransformedError;
-        
-        if (shouldUseMock) {
-          logger.debug("API not available, using mock service for phone verification", { status, error: error?.message || String(error) });
-          const mockResponse = await onboardingService.verifyPhone(phone, otp);
-          if (mockResponse.error) {
-            const mockError = new Error(mockResponse.message);
-            (mockError as any).errors = mockResponse.errors;
-            throw mockError;
-          }
-          return {
-            error: false,
-            data: mockResponse.data,
-            message: mockResponse.message,
-            errors: [],
-            status: mockResponse.status,
-          };
-        } else {
-          logger.warn("Phone verification failed with non-mockable error", { status });
-          throw error;
-        }
-      }
+      const response = await apiCall.auth.verifyPhone(phone, otp);
+      return response;
     },
     onSuccess: () => {
       savePhone(phone, true);
@@ -325,47 +170,8 @@ const AgentOnboarding = () => {
         throw new Error(firstError?.message || "Invalid agent profile data");
       }
 
-      // In development, skip API call and go straight to mock service
-      if (import.meta.env.DEV) {
-        logger.debug("[AgentOnboarding] DEV mode: Using mock service directly for agent profile");
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        return {
-          error: false,
-          data: { ...data, id: currentUid },
-          message: "Agent profile saved successfully",
-        };
-      }
-
-      // Production: Try real API first, fallback to mock service on error
-      try {
-        const response = await apiCall.client.post(API_ENDPOINTS.ACCOUNT.AGENT_PROFILE, data, false);
-        return response.data;
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const isNetworkError = !error?.response;
-        const isTransformedError = error?.error === true;
-        const shouldUseMock = 
-          status === 400 || 
-          status === 404 || 
-          status === 502 || 
-          isNetworkError ||
-          isTransformedError;
-        
-        if (shouldUseMock) {
-          logger.debug("API not available, using mock service for agent profile", { status, error: error?.message || String(error) });
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          return {
-            error: false,
-            data: { ...data, id: currentUid },
-            message: "Agent profile saved successfully",
-          };
-        } else {
-          logger.warn("Agent profile save failed with non-mockable error", { status });
-          throw error;
-        }
-      }
+      const response = await apiCall.client.post(API_ENDPOINTS.ACCOUNT.AGENT_PROFILE, data, false);
+      return response.data;
     },
     onSuccess: () => {
       // Save agent profile

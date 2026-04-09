@@ -22,9 +22,25 @@ export const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const url = (config.url || "").toLowerCase();
+    const isPublicAuthPath =
+      url.includes("/api/us/v1/auth/email-otp") ||
+      url.includes("/api/us/v1/auth/verify-email") ||
+      url.includes("/api/us/v1/auth/signup") ||
+      url.includes("/api/us/v1/auth/login") ||
+      url.includes("/api/us/v1/onboarding/account-types") ||
+      url.includes("/api/us/v1/onboarding/requirements");
+    if (!isPublicAuthPath) {
+      const token = useAuthStore.getState().accessToken;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } else if (config.headers) {
+      if (typeof (config.headers as { delete?: (k: string) => void }).delete === "function") {
+        (config.headers as { delete: (k: string) => void }).delete("Authorization");
+      } else {
+        delete (config.headers as Record<string, unknown>).Authorization;
+      }
     }
     return config;
   },

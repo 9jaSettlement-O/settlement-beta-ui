@@ -21,7 +21,7 @@ export const appConfig = {
 
   // Features
   features: {
-    enableMockServices: env.DEV, // Enable mock services in development
+    enableMockServices: false, // Real APIs only; no mock fallbacks for auth/onboarding
     enableErrorTracking: env.PROD, // Enable error tracking in production
     enableAnalytics: env.PROD, // Enable analytics in production
   },

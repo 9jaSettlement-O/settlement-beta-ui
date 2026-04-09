@@ -22,11 +22,11 @@ export interface UserProfile {
 }
 
 export async function getProfile(): Promise<UserProfile> {
-  const { data } = await apiClient.get<UserProfile>("/api/us/v1/users/profile");
+  const { data } = await apiClient.get<UserProfile>("/api/as/v1/users/profile");
   return data;
 }
 
 export async function updateProfile(payload: ProfilePayload): Promise<UserProfile> {
-  const { data } = await apiClient.patch<UserProfile>("/api/us/v1/users/profile", payload);
+  const { data } = await apiClient.patch<UserProfile>("/api/as/v1/users/profile", payload);
   return data;
 }

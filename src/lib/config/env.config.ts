@@ -59,9 +59,13 @@ export const isProd = env.PROD;
 
 /**
  * Get API base URL.
- * Strips trailing /api so paths like /api/us/v1/... are never doubled (e.g. .../api/api/...).
+ * In development we use the Vite proxy path (/api-dev) so requests stay same-origin and avoid CORS.
+ * Strips trailing /api so paths like /api/as/v1/... are never doubled (e.g. .../api/api/...).
  */
 export const getApiUrl = (): string => {
+  if (import.meta.env.DEV) {
+    return "/api-dev";
+  }
   const url = env.VITE_APP_API_URL.trim().replace(/\/api\/?$/i, "");
   return url || "https://apis-dev.9jasettlement.com";
 };

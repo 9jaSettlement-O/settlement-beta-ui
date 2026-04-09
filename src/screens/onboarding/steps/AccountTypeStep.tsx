@@ -1,23 +1,24 @@
 /**
- * Step 1: Select account type and load requirements.
+ * Step 1: Load account types from User Service; on continue, load requirements.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, Building2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOnboardingStore } from "@/store/onboarding.store";
-import type { AccountType } from "@/types/onboarding.types";
 import { getAccountTypes, getOnboardingRequirements } from "@/services/onboarding.service";
 import { parseApiError } from "@/utils/parseApiError";
+import { apiAccountTypeToUi, isKnownApiAccountType } from "@/utils/account-type.util";
 
-const API_ACCOUNT_TYPES = ["INDIVIDUAL", "AGENT", "BUSINESS"] as const;
-const TYPE_ICONS = {
+const TYPE_ICONS: Record<string, typeof User> = {
   INDIVIDUAL: User,
   BUSINESS: Building2,
   AGENT: Users,
 };
+
+const DISPLAY_ORDER = ["INDIVIDUAL", "AGENT", "BUSINESS"];
 
 export default function AccountTypeStep() {
   const {
@@ -30,7 +31,15 @@ export default function AccountTypeStep() {
     error,
   } = useOnboardingStore();
   const [types, setTypes] = useState<{ type: string; label?: string; description?: string }[]>([]);
-  const [selected, setSelected] = useState<(typeof API_ACCOUNT_TYPES)[number] | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const sortedTypes = useMemo(() => {
+    const rank = (t: string) => {
+      const i = DISPLAY_ORDER.indexOf(t.toUpperCase());
+      return i === -1 ? 99 : i;
+    };
+    return [...types].sort((a, b) => rank(a.type) - rank(b.type));
+  }, [types]);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,16 +55,18 @@ export default function AccountTypeStep() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [setLoading, setError]);
 
   const handleProceed = async () => {
-    if (!selected) return;
+    if (!selected || !isKnownApiAccountType(selected)) return;
     setLoading(true);
     setError(null);
     try {
       const requirements = await getOnboardingRequirements(selected);
-      setAccountType(selected.toLowerCase() as AccountType);
+      setAccountType(apiAccountTypeToUi(selected));
       setRequirements(requirements);
       nextStep();
     } catch (err) {
@@ -74,29 +85,29 @@ export default function AccountTypeStep() {
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-3">
-        {types.length === 0 && !loading && (
+        {sortedTypes.length === 0 && !loading && (
           <p className="col-span-full text-muted-foreground">No account types available.</p>
         )}
-        {API_ACCOUNT_TYPES.map((type) => {
-          const meta = types.find((t) => t.type === type) ?? { label: type, description: "" };
-          const Icon = TYPE_ICONS[type];
-          const isSelected = selected === type;
+        {sortedTypes.map((item) => {
+          const key = item.type.toUpperCase();
+          const Icon = TYPE_ICONS[key] ?? User;
+          const isSelected = selected?.toUpperCase() === key;
           return (
             <Card
-              key={type}
+              key={item.type}
               className={cn(
                 "cursor-pointer transition-all hover:shadow-md",
                 isSelected && "ring-2 ring-primary ring-offset-2"
               )}
-              onClick={() => setSelected(type)}
+              onClick={() => setSelected(item.type)}
             >
               <CardContent className="p-6">
                 <div className="flex flex-col items-center gap-2 text-center">
-                  {Icon && <Icon className="h-8 w-8" />}
-                  <span className="font-medium">{meta.label ?? type}</span>
-                  {meta.description && (
-                    <span className="text-sm text-muted-foreground">{meta.description}</span>
-                  )}
+                  <Icon className="h-8 w-8" />
+                  <span className="font-medium">{item.label ?? item.type}</span>
+                  {item.description ? (
+                    <span className="text-sm text-muted-foreground">{item.description}</span>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>

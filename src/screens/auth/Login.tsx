@@ -4,94 +4,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "@tanstack/react-query";
-import apiCall from "@/api/config";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { clearDeviceHint, setReturning } from "@/utils/device-hint.util";
 import { getSafeReturnTo } from "@/utils/safe-redirect.util";
 import { isKycVerifiedFromUser } from "@/utils/kyc-status.util";
-import logger from "@/utils/logger.util";
 import { PageTransition } from "@/components/transitions/PageTransition";
 import { DecorativeLogoBackground } from "@/components/onboarding/DecorativeLogoBackground";
 import AppLogo from "@/components/AppLogo";
-
-/** Mock login response when API is not available (e.g. DEV or CORS). */
-async function mockLogin(data: { email: string; password: string }) {
-  await new Promise((r) => setTimeout(r, 400));
-  return {
-    error: false,
-    token: `mock_${Date.now()}`,
-    data: {
-      user: {
-        id: "mock_user_1",
-        uid: "mock_user_1",
-        email: data.email,
-        type: "individual",
-        account_type: "individual",
-      },
-    },
-  };
-}
+import { parseApiError } from "@/utils/parseApiError";
 
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const emailFromQuery = searchParams.get("email");
-  const { login } = useAuthStore();
+  const loginWithPassword = useAuthStore((s) => s.loginWithPassword);
+  const authLoading = useAuthStore((s) => s.loading);
   const [email, setEmail] = useState(emailFromQuery || "");
   const [password, setPassword] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => {
-      if (import.meta.env.DEV) {
-        logger.debug("[Login] DEV mode: using mock login");
-        return await mockLogin(data);
-      }
-      try {
-        return await apiCall.auth.login(data);
-      } catch (err: unknown) {
-        const o = err as { response?: unknown; message?: string; error?: boolean };
-        const isNetworkOrCors =
-          !o?.response ||
-          (typeof o?.message === "string" &&
-            (o.message.toLowerCase().includes("cors") || o.message.toLowerCase().includes("network")));
-        if (isNetworkOrCors) {
-          logger.debug("[Login] Network/CORS, using mock login");
-          return await mockLogin(data);
-        }
-        throw err;
-      }
-    },
-    onSuccess: (response) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await loginWithPassword(email, password);
       setFailedAttempts(0);
-      const token = response.token || response.data?.token;
-      const user = response.data?.user || response.data;
-
-      if (token && user) {
-        const id = user.id || user.uid || "";
-        const type = user.type || user.account_type || "individual";
-        const kycVerified = isKycVerifiedFromUser(user as Record<string, unknown>);
+      const { user, accessToken } = useAuthStore.getState();
+      if (accessToken && user) {
+        const kycVerified = isKycVerifiedFromUser(user as unknown as Record<string, unknown>);
         setReturning();
-        login(token, id, type, user.email || email);
-        useOnboardingStore.getState().hydrateFromAuth(id, type, kycVerified);
+        useOnboardingStore.getState().hydrateFromAuth(user.id, user.type, kycVerified);
         toast.success("Login successful");
         const target = getSafeReturnTo(returnTo);
         navigate(target);
       }
-    },
-    onError: () => {
+    } catch {
       setFailedAttempts((prev) => prev + 1);
-      toast.error("Invalid credentials");
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    loginMutation.mutate({ email, password });
+      const msg = useAuthStore.getState().error ?? parseApiError(new Error("Login failed")).message;
+      toast.error(msg);
+    }
   };
 
   return (
@@ -107,84 +60,79 @@ const Login = () => {
           </div>
 
           <Card>
-          <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(_e, sanitized) => setEmail(sanitized)}
-                  sanitizeMode="email"
-                  required
-                  disabled={loginMutation.isPending}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  {failedAttempts >= 2 && (
-                    <Link
-                      to="/forgot-password"
-                      className="text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/90"
-                    >
-                      Forgot password?
-                    </Link>
-                  )}
+            <CardHeader>
+              <CardTitle>Welcome Back</CardTitle>
+              <CardDescription>Enter your credentials to access your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(_e, sanitized) => setEmail(sanitized)}
+                    sanitizeMode="email"
+                    required
+                    disabled={authLoading}
+                  />
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(_e, sanitized) => setPassword(sanitized)}
-                  showPasswordToggle
-                  required
-                  disabled={loginMutation.isPending}
-                />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    {failedAttempts >= 2 && (
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/90"
+                      >
+                        Forgot password?
+                      </Link>
+                    )}
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(_e, sanitized) => setPassword(sanitized)}
+                    showPasswordToggle
+                    required
+                    disabled={authLoading}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={authLoading} size="lg">
+                  {authLoading ? "Logging in..." : "Login"}
+                </Button>
+              </form>
+
+              <div className="mt-6 space-y-2 text-center text-sm text-muted-foreground">
+                <p>
+                  Don&apos;t have an account?{" "}
+                  <Link
+                    to="/select-account-type"
+                    className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
+                  >
+                    Sign up here
+                  </Link>
+                </p>
+                <p>
+                  <button
+                    type="button"
+                    className="font-medium text-primary underline underline-offset-4 hover:text-primary/90 bg-transparent border-none cursor-pointer p-0"
+                    onClick={() => {
+                      clearDeviceHint();
+                      navigate("/select-account-type");
+                    }}
+                  >
+                    Use another account
+                  </button>
+                </p>
               </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loginMutation.isPending}
-                size="lg"
-              >
-                {loginMutation.isPending ? "Logging in..." : "Login"}
-              </Button>
-            </form>
-
-            <div className="mt-6 space-y-2 text-center text-sm text-muted-foreground">
-              <p>
-                Don't have an account?{" "}
-                <Link
-                  to="/select-account-type"
-                  className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
-                >
-                  Sign up here
-                </Link>
-              </p>
-              <p>
-                <button
-                  type="button"
-                  className="font-medium text-primary underline underline-offset-4 hover:text-primary/90 bg-transparent border-none cursor-pointer p-0"
-                  onClick={() => {
-                    clearDeviceHint();
-                    navigate("/select-account-type");
-                  }}
-                >
-                  Use another account
-                </button>
-              </p>
-            </div>
-          </CardContent>
+            </CardContent>
           </Card>
         </div>
       </main>
